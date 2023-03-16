@@ -34,6 +34,7 @@ def DrawPolygon(image_size, points, color, image):
         image = cv2.fillPoly(image, [points], color)
     else:
         image = cv2.fillPoly(image, points, color)
+
     return image
 
 
@@ -47,6 +48,8 @@ def DrawPoints(image, x, y, color=(153, 92, 0)):
 
 
 def DrawNum(image, x, y, num):
+    x /= zoomRate
+    y /= zoomRate
     x = np.round(x*pic_size).astype(np.int32)
     y = np.round(y*pic_size).astype(np.int32)
     s_num = str(num)
@@ -56,9 +59,9 @@ def DrawNum(image, x, y, num):
 
 def DrawLine(image, pt1, pt2):
 
-    x1 = int(pt1[0] * pic_size)
-    y1 = int(pt1[1] * pic_size)
-    x2 = int(pt2[0] * pic_size)
-    y2 = int(pt2[1] * pic_size)
+    x1 = int(pt1[0] * pic_size / zoomRate)
+    y1 = int(pt1[1] * pic_size / zoomRate)
+    x2 = int(pt2[0] * pic_size / zoomRate)
+    y2 = int(pt2[1] * pic_size / zoomRate)
 
     cv2.line(image, (x1, y1), (x2, y2), (122, 234, 31), 2, 8)

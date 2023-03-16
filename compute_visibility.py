@@ -5,6 +5,11 @@ import operator
 import math
 from draw_pictures import *
 
+test = 0
+if test:
+    import visilibity as vis
+    from test_visilibity import ShapelyPolygon_2_VisilibityPolygon, VisilibityPolygon_2_ShapelyPolygon
+
 
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
@@ -78,7 +83,7 @@ def GetIntersectPointList(intersection):
 def GetVisibilityPolygon(polygon, watcher):
 
     visibilityPolygon = []
-    if not polygon.contains(watcher):
+    if not polygon.covers(watcher):
         print("The point should be within polygon!")
         return visibilityPolygon
     vertexsList = list(polygon.exterior.coords)
@@ -155,6 +160,14 @@ if __name__ == '__main__':
     # watcher = shapely.Point(0.5, 0.1)
     visibilityPolygon = GetVisibilityPolygon(
         polygon, watcher)
+    if test:
+        walls = ShapelyPolygon_2_VisilibityPolygon(polygon)
+        env = vis.Environment([walls])
+        # 观察者
+        observer = vis.Point(watcher.x, watcher.y)
+        isovist = vis.Visibility_Polygon(observer, env, 0.0000001)
+        visibilityPolygon = VisilibityPolygon_2_ShapelyPolygon(isovist)
+
     image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
     DrawPolygon((pic_size, pic_size, 3), list(
                 polygon.exterior.coords), (255, 255, 255), image)
