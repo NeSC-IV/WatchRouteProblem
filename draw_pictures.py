@@ -65,3 +65,10 @@ def DrawLine(image, pt1, pt2):
     y2 = int(pt2[1] * pic_size / zoomRate)
 
     cv2.line(image, (x1, y1), (x2, y2), (122, 234, 31), 2, 8)
+
+
+def DrawPath(image, path):
+    i = 0
+    while i < len(path)-1:
+        DrawLine(image, path[i], path[i+1])
+        i += 1

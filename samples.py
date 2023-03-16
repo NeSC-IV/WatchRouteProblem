@@ -4,6 +4,7 @@ import sys
 import random_polygons_generate
 from polygons_coverage import PolygonCover, SelectPointFromPolygon
 from draw_pictures import *
+from gtsp import TaPu
 
 
 def getLineList(lines):
@@ -21,7 +22,9 @@ def GetSample(polygonList, freeSpace, dSample, image):
     for polygon in polygonList:
         pointList = []
         lineString = polygon.boundary
-        lineList = getLineList(lineString.difference(freeSpace.boundary))
+        lineList = getLineList(lineString.difference(
+            # freeSpace.boundary))
+            freeSpace.boundary.buffer(zoomRate/200)))
         for line in lineList:
             start = shapely.get_point(line, 0)
             if freeSpace.buffer(-20).contains(start):
@@ -40,10 +43,29 @@ def GetSample(polygonList, freeSpace, dSample, image):
     return sampleList
 
 
+def postProcessing(sampleList):
+    cityPos = []
+    cityGoods = []
+    cityClass = []
+    n = 0
+    for sample in sampleList:
+        classify = []
+        for point in sample:
+            cityPos.append((point.x, point.y))
+            cityGoods.append(sampleList.index(sample))
+            classify.append(n)
+            n += 1
+        if (len(classify) > 0):
+            cityClass.append(classify)
+    return ((cityPos, cityGoods, cityClass))
+
+
 if __name__ == '__main__':
-    edgeNum = None
-    iterationNum = None
+    edgeNum = 20
+    iterationNum = 10
     coverageRate = 0.98
+
+    # 读取命令行参数
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'he:i:c:')
     except getopt.GetoptError:
@@ -67,11 +89,14 @@ if __name__ == '__main__':
             iterationNum = int(arg)
         elif opt == '-c':
             coverageRate = float(arg)
+
+    # 随机生成多边形和守卫点
     polygon = random_polygons_generate.GetPolygon(edgeNum)
     # polygon = shapely.Polygon([(0, 0), (10000, 0), (10000, 3000), (8000, 3000),
     #                            (8000, 6000), (10000, 6000), (10000, 10000), (0, 10000), (0, 6000), (2000, 6000), (2000, 3000), (0, 3000)])
     watcher = SelectPointFromPolygon(polygon)
 
+    # 绘制生成的多边形
     image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
     DrawPolygon((pic_size, pic_size, 3), list(
         polygon.exterior.coords), (255, 255, 255), image)
@@ -81,8 +106,9 @@ if __name__ == '__main__':
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+    # 求出并绘制最大凸子集
     polygonCoverList = PolygonCover(
-        polygon, 3000, 1-coverageRate, iterationNum)
+        polygon, 30000, 1-coverageRate, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     n = 0
     m = 255
@@ -100,12 +126,26 @@ if __name__ == '__main__':
         if (m <= 0):
             o -= 55
         freeSpace = freeSpace.union(p)
+
+    # 在凸子集上采样
     sampleList = GetSample(
-        polygonCoverList, freeSpace, 2000, image)
-    print(sampleList)
+        polygonCoverList, freeSpace, 3000, image)
+    print(len(sampleList))
+
+    # 确定样本访问顺序
+    case = postProcessing(sampleList)
+    order, length, path = TaPu(case, polygon)
+    print(length)
+    # 绘制sample 和 访问顺序
     for sample in sampleList:
         for point in sample:
             DrawPoints(image, point.x, point.y)
+
+    for i in range(len(order)):
+        DrawNum(image, order[i][0], order[i][1], i)
+
+    for i in range(len(path)):
+        DrawPath(image, path[i])
     cv2.imshow('polygons', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

@@ -10,7 +10,7 @@ import cv2
 import matplotlib.pyplot as plt
 from shapely import Polygon
 import random
-# random.seed(11)
+# random.seed(110)
 
 # function to save image
 zoomRate = 10000

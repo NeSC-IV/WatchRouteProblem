@@ -58,10 +58,10 @@ def GetRayLine(watcher, vertex):
 if __name__ == '__main__':
     image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
 
-    polygon = GetPolygon(50)
+    polygon = GetPolygon(22)
     watcher = SelectPointFromPolygon(polygon)
     visiblePolygon = FindVisibleRegion(
-        polygon, watcher.x, watcher.y, 0.4)  # d为可视距离
+        polygon, watcher, 1000000000)  # d为可视距离
 
     DrawPolygon((pic_size, pic_size, 3), list(
         polygon.exterior.coords), (255, 255, 255), image)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         visiblePolygon.exterior.coords), (255, 0, 255), image)
     image = DrawPoints(image, watcher.x, watcher.y)
 
-    kernel, reflexList = GetKernel(visiblePolygon, image, watcher)
+    kernel, reflexList = GetKernel(visiblePolygon,  watcher)
     print(kernel)
     DrawPolygon((pic_size, pic_size, 3), list(
         kernel.exterior.coords), (0, 255, 255), image)
