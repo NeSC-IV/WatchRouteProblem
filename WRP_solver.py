@@ -1,73 +1,15 @@
 import shapely
-import getopt
-import sys
-import random_polygons_generate
-from polygons_coverage import PolygonCover, SelectPointFromPolygon
-from draw_pictures import *
-from gtsp import TaPu
-
-
-def getLineList(lines):
-    lineList = []
-    if (type(lines) == shapely.LineString):
-        lineList.append(lines)
-    elif (type(lines) == shapely.MultiLineString):
-        for line in lines.geoms:
-            lineList.append(line)
-    return lineList
-
-
-def GetSample(polygonList, freeSpace, dSample, image):
-    sampleList = []
-    for polygon in polygonList:
-        pointList = []
-        lineString = polygon.boundary
-        lineList = getLineList(lineString.difference(
-            freeSpace.boundary.buffer(zoomRate/1000)))
-        for line in lineList:
-            path = 0
-            while (path < line.length):
-                point = shapely.line_interpolate_point(line, path)
-                if freeSpace.covers(point):
-                    pointList.append(point)
-                path += dSample
-            end = shapely.get_point(line, -1)
-            if freeSpace.covers(end):
-                pointList.append(end)
-
-            # start = shapely.get_point(line, 0)
-            # if freeSpace.buffer(-20).contains(start):
-            #     pointList.append(start)
-            # end = shapely.get_point(line, -1)
-            # if freeSpace.buffer(-20).contains(end):
-            #     pointList.append(end)
-        # path = 0
-        # while (path < lineString.length):
-        #     point = shapely.line_interpolate_point(lineString, path)
-        #     if freeSpace.buffer(-20).contains(point):
-        #         pointList.append(point)
-        #     path += dSample
-
-        sampleList.append(pointList)
-    return sampleList
-
-
-def postProcessing(sampleList):
-    cityPos = []
-    cityGoods = []
-    cityClass = []
-    n = 0
-    for sample in sampleList:
-        classify = []
-        for point in sample:
-            cityPos.append((point.x, point.y))
-            cityGoods.append(sampleList.index(sample))
-            classify.append(n)
-            n += 1
-        if (len(classify) > 0):
-            cityClass.append(classify)
-    return ((cityPos, cityGoods, cityClass))
-
+import GTSP
+import MACS
+from Global import *
+def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
+    polygon = shapely.Polygon(polygon)
+    convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
+    sampleList= GTSP.GetSample(convexSet,polygon,zoomRate/10)
+    gtspCase = GTSP.postProcessing(sampleList)
+    order, length, path = GTSP.GetTrace(gtspCase,polygon)
+    return convexSet,order,length,path
+    
 
 if __name__ == '__main__':
     edgeNum = 20

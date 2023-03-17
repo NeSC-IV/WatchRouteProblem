@@ -1,15 +1,6 @@
 import shapely
-import random
-import random_polygons_generate
 import operator
 import math
-from draw_pictures import *
-
-test = 0
-if test:
-    import visilibity as vis
-    from test_visilibity import ShapelyPolygon_2_VisilibityPolygon, VisilibityPolygon_2_ShapelyPolygon
-
 
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
@@ -142,39 +133,3 @@ def GetVisibilityPolygon(polygon, watcher):
                     break
         i = i + 1
     return shapely.Polygon(points)
-
-
-if __name__ == '__main__':
-    polygon = random_polygons_generate.GetPolygon(30)
-    # polygon = shapely.Polygon([(0, 0), (1, 0), (1, 0.3), (0.5, 0.3),
-    #                            (0.5, 0.6), (1, 0.6), (1, 1), (0, 1)])
-    watcher = None
-    minx, miny, maxx, maxy = polygon.bounds
-    while True:
-        p = shapely.Point(random.uniform(minx, maxx),
-                          random.uniform(miny, maxy))
-        if polygon.contains(p):
-            watcher = p
-            break
-    # watcher = shapely.Point(0.505, 0.9999)
-    # watcher = shapely.Point(0.5, 0.1)
-    visibilityPolygon = GetVisibilityPolygon(
-        polygon, watcher)
-    if test:
-        walls = ShapelyPolygon_2_VisilibityPolygon(polygon)
-        env = vis.Environment([walls])
-        # 观察者
-        observer = vis.Point(watcher.x, watcher.y)
-        isovist = vis.Visibility_Polygon(observer, env, 0.0000001)
-        visibilityPolygon = VisilibityPolygon_2_ShapelyPolygon(isovist)
-
-    image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
-    DrawPolygon((pic_size, pic_size, 3), list(
-                polygon.exterior.coords), (255, 255, 255), image)
-    DrawPolygon((pic_size, pic_size, 3), list(
-        visibilityPolygon.exterior.coords), (25, 55, 255), image)
-    image = DrawPoints(image, watcher.x, watcher.y)
-
-    cv2.imshow('polygons', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()

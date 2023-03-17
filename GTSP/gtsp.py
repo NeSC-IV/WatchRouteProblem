@@ -1,11 +1,7 @@
-# -*- coding:utf-8 -*-
-# author: xkey
-# 禁忌搜索
-# 邻域 邻域动作 禁忌表 候选集合 评价函数 特赦规则
 import numpy as np
-import math
 import random
-from a_star import findPath
+from astar.a_star import findPath
+
 
 
 def ColisionFreeDistance(freeSpace, start, goal):
@@ -35,7 +31,7 @@ def cal_cost(distance, solution, goods_num):
     return cost
 
 
-def TaPu(tspCase, freeSpace):
+def GetTrace(tspCase, freeSpace):
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
     city_position, goods_class, city_class = tspCase

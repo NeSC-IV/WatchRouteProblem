@@ -1,18 +1,13 @@
 #!/usr/bin/python3.8
 # -*- coding:utf-8 -*-
-import numpy as np
-import cv2
 import shapely
 import random
-import sys
-import getopt
 from shapely.ops import split, nearest_points
 from shapely.validation import make_valid
 
-import random_polygons_generate
 from compute_kernel import GetKernel
-from draw_pictures import *
 from compute_visibility import GetVisibilityPolygon
+from Global import *
 
 
 def SelectMaxPolygon(polygons):
@@ -197,13 +192,10 @@ def PolygonCover(polygon, d, coverage, iterations=10):
     unCoverPolygon = polygon
     while ((unCoverPolygon.area / polygon.area) > coverage):
 
-        # maxUncoveredPolygon = SelectMaxPolygon(unCoverPolygon)
-        # point = SelectPointFromPolygon(maxUncoveredPolygon)
         point = SelectPointFromPolygon(unCoverPolygon)
 
         R0 = MaximallyCoveringConvexSubset(unCoverPolygon, polygon, point, d)
         bestR = R0
-        # coverAreaOfbestR = (R0.intersection(maxUncoveredPolygon)).area
         coverAreaOfbestR = (R0.intersection(unCoverPolygon)).area
         AreaOfbestR = R0.area
         num = iterations
@@ -212,8 +204,6 @@ def PolygonCover(polygon, d, coverage, iterations=10):
             R = MaximallyCoveringConvexSubset(
                 unCoverPolygon, polygon, point, d)
             coverAreaOfR = (R.intersection(unCoverPolygon)).area
-            # R = MaximallyCoveringConvexSubset(maxUncoveredPolygon, point, d)
-            # coverAreaOfR = (R.intersection(maxUncoveredPolygon)).area
             AreaOfR = R.area
             if (coverAreaOfR > coverAreaOfbestR) or (coverAreaOfbestR == coverAreaOfbestR and AreaOfR > AreaOfbestR):
                 bestR = R
@@ -223,72 +213,5 @@ def PolygonCover(polygon, d, coverage, iterations=10):
 
         polygonCoverList.append(bestR)
         unCoverPolygon = unCoverPolygon.difference(bestR)
-        # unCoverPolygon = SelectMaxPolygon(make_valid(unCoverPolygon)
 
     return polygonCoverList
-
-
-if __name__ == '__main__':
-
-    edgeNum = None
-    iterationNum = None
-    coverageRate = 0.98
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'he:i:c:')
-    except getopt.GetoptError:
-        print("Usage:")
-        print(
-            "python/python3 polygons_coverage.py -e <num_of_edge> -i <num_of_iteration> {-c <coverage_rate>}")
-        print("For example:")
-        print("python3 polygons_coverage.py -e 20 -i 10 {-c 0.98}")
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print("Usage:")
-            print(
-                "python/python3 polygons_coverage.py -e <num_of_edge> -i <num_of_iteration>")
-            print("For example:")
-            print("python3 polygons_coverage.py -e 20 -i 10 {-c 0.98}")
-            sys.exit(0)
-        if opt == '-e':
-            edgeNum = int(arg)
-        elif opt == '-i':
-            iterationNum = int(arg)
-        elif opt == '-c':
-            coverageRate = float(arg)
-    polygon = random_polygons_generate.GetPolygon(edgeNum)
-    # polygon = shapely.Polygon([(0, 0), (10000, 0), (10000, 3000), (8000, 3000),
-    #                            (8000, 6000), (10000, 6000), (10000, 10000), (0, 10000), (0, 6000), (2000, 6000), (2000, 3000), (0, 3000)])
-    watcher = SelectPointFromPolygon(polygon)
-
-    image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
-    DrawPolygon((pic_size, pic_size, 3), list(
-        polygon.exterior.coords), (255, 255, 255), image)
-    # DrawPolygon((pic_size, pic_size, 3), list(
-    #     polygon.buffer(-200).exterior.coords), (255, 255, 25), image)
-    image = DrawPoints(image, watcher.x, watcher.y)
-    cv2.imshow('polygons', image)
-    print("Press any key to continue!")
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    polygonCoverList = PolygonCover(
-        polygon, 30000, 1-coverageRate, iterationNum)
-    print("The number of convex polygonlen is " + str(len(polygonCoverList)))
-    n = 0
-    m = 255
-    o = 255
-    for p in polygonCoverList:
-        # print(p.simplify(0.5, preserve_topology=False))
-        # p = p.simplify(0.5, preserve_topology=False)
-        image = DrawPolygon((pic_size, pic_size, 3), list(
-            p.exterior.coords), (o, n, m), image)
-        n += 55
-        if (n >= 255):
-            m -= 55
-        if (m <= 0):
-            o -= 55
-
-    cv2.imshow('polygons', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()

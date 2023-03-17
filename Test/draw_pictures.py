@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from _global import *
+from . import Global
 
 
 def DrawPolygon(image_size, points, color, image):

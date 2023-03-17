@@ -2,7 +2,7 @@
 import math
 import shapely
 from astar import AStar
-from _global import *
+from Global import *
 
 
 class AStarSolver(AStar):

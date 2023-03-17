@@ -1,9 +1,5 @@
 import shapely
 from shapely.ops import split
-from random_polygons_generate import GetPolygon
-from draw_pictures import *
-# from polygons_coverage import FindVisibleRegion, SelectPointFromPolygon
-
 
 def GetKernel(polygon, watcher):
 
@@ -55,24 +51,3 @@ def GetRayLine(watcher, vertex):
     return shapely.LineString([extendPoint1, extendPoint2])
 
 
-if __name__ == '__main__':
-    image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
-
-    polygon = GetPolygon(22)
-    watcher = SelectPointFromPolygon(polygon)
-    visiblePolygon = FindVisibleRegion(
-        polygon, watcher, 1000000000)  # d为可视距离
-
-    DrawPolygon((pic_size, pic_size, 3), list(
-        polygon.exterior.coords), (255, 255, 255), image)
-    DrawPolygon((pic_size, pic_size, 3), list(
-        visiblePolygon.exterior.coords), (255, 0, 255), image)
-    image = DrawPoints(image, watcher.x, watcher.y)
-
-    kernel, reflexList = GetKernel(visiblePolygon,  watcher)
-    print(kernel)
-    DrawPolygon((pic_size, pic_size, 3), list(
-        kernel.exterior.coords), (0, 255, 255), image)
-    cv2.imshow('polygons', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
