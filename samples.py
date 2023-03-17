@@ -23,21 +23,30 @@ def GetSample(polygonList, freeSpace, dSample, image):
         pointList = []
         lineString = polygon.boundary
         lineList = getLineList(lineString.difference(
-            # freeSpace.boundary))
-            freeSpace.boundary.buffer(zoomRate/200)))
+            freeSpace.boundary.buffer(zoomRate/1000)))
         for line in lineList:
-            start = shapely.get_point(line, 0)
-            if freeSpace.buffer(-20).contains(start):
-                pointList.append(start)
+            path = 0
+            while (path < line.length):
+                point = shapely.line_interpolate_point(line, path)
+                if freeSpace.covers(point):
+                    pointList.append(point)
+                path += dSample
             end = shapely.get_point(line, -1)
-            if freeSpace.buffer(-20).contains(end):
+            if freeSpace.covers(end):
                 pointList.append(end)
-        path = 0
-        while (path < lineString.length):
-            point = shapely.line_interpolate_point(lineString, path)
-            if freeSpace.buffer(-20).contains(point):
-                pointList.append(point)
-            path += dSample
+
+            # start = shapely.get_point(line, 0)
+            # if freeSpace.buffer(-20).contains(start):
+            #     pointList.append(start)
+            # end = shapely.get_point(line, -1)
+            # if freeSpace.buffer(-20).contains(end):
+            #     pointList.append(end)
+        # path = 0
+        # while (path < lineString.length):
+        #     point = shapely.line_interpolate_point(lineString, path)
+        #     if freeSpace.buffer(-20).contains(point):
+        #         pointList.append(point)
+        #     path += dSample
 
         sampleList.append(pointList)
     return sampleList
@@ -101,19 +110,19 @@ if __name__ == '__main__':
     DrawPolygon((pic_size, pic_size, 3), list(
         polygon.exterior.coords), (255, 255, 255), image)
     image = DrawPoints(image, watcher.x, watcher.y)
-    cv2.imshow('polygons', image)
-    print("Press any key to continue!")
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow('polygons', image)
+    # print("Press any key to continue!")
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     # 求出并绘制最大凸子集
     polygonCoverList = PolygonCover(
-        polygon, 30000, 1-coverageRate, iterationNum)
+        polygon, 3000, 1-coverageRate, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     n = 0
     m = 255
     o = 255
-    image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
+    # image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
 
     freeSpace = shapely.Polygon()
     for p in polygonCoverList:
@@ -128,9 +137,13 @@ if __name__ == '__main__':
         freeSpace = freeSpace.union(p)
 
     # 在凸子集上采样
+    length = 0
     sampleList = GetSample(
-        polygonCoverList, freeSpace, 3000, image)
-    print(len(sampleList))
+        polygonCoverList, polygon, 3000, image)
+    for sample in sampleList:
+        length += len(sample)
+    print(length)
+
 
     # 确定样本访问顺序
     case = postProcessing(sampleList)

@@ -6,7 +6,6 @@ import shapely
 import random
 import sys
 import getopt
-import time
 from shapely.ops import split, nearest_points
 from shapely.validation import make_valid
 
@@ -138,13 +137,14 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     for polygon in polygons:
         if polygon.covers(watcher):
             return polygon
+    print(polygons)
 
 
 def MaximallyCoveringConvexSubset(unCoveredPolygon, initialPolygon, watcher, d):  # MCCS
 
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d)  # d为可视距离
-    if not (visiblePolygon.buffer(10).covers(watcher)):
+    if not (visiblePolygon.buffer(zoomRate/1000).covers(watcher)):
         print("error")
         exit(1)
     kernelPolygon, reflexPointList = GetKernel(visiblePolygon, watcher)

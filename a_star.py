@@ -13,7 +13,7 @@ class AStarSolver(AStar):
     def __init__(self, polygon):
         self.polygon = polygon
         # self.polygon = polygon.buffer(zoomRate/1000)
-        self.step = zoomRate/100
+        self.step = (zoomRate/100)
 
     def isReachable(self, point):
         return self.polygon.buffer(self.step).covers(shapely.Point(point))
@@ -34,9 +34,6 @@ class AStarSolver(AStar):
         """
 
         x, y = node
-        # stepSqrt2 = self.step*math.sqrt(2)/2
-        # neighborList = [(x+self.step, y), (x-self.step, y), (x, y+self.step), (x, y-self.step),
-        #                 (x+stepSqrt2, y+stepSqrt2), (x-stepSqrt2, y+stepSqrt2), (x+stepSqrt2, y-stepSqrt2), (x-stepSqrt2, y-stepSqrt2)]
         neighborList = [(x+self.step, y), (x-self.step, y),
                         (x, y+self.step), (x, y-self.step)]
         return [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
@@ -46,11 +43,13 @@ def findPath(start, goal, freeSpace):
 
     # let's solve it
     aStarSolver = AStarSolver(freeSpace)
-    start = (int(start[0]/100) * 100, int(start[1]/100) * 100)
-    goal = (int(goal[0]/100) * 100, int(goal[1]/100) * 100)
-    print(start, goal)
+    start = (int(start[0]/(zoomRate/100)) * (zoomRate/100), int(start[1]/(zoomRate/100)) * (zoomRate/100))
+    goal = (int(goal[0]/(zoomRate/100)) * (zoomRate/100), int(goal[1]/(zoomRate/100)) * (zoomRate/100))
+    if (start == goal):
+        return [start, goal], 0
+
+        
     foundPath = list(aStarSolver.astar(start, goal))
     distance = len(foundPath) * aStarSolver.step
-    print(distance)
 
     return foundPath, distance

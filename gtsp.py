@@ -9,8 +9,7 @@ from a_star import findPath
 
 
 def ColisionFreeDistance(freeSpace, start, goal):
-    if (start == goal):
-        return [start, goal], 0
+
     path, distance = findPath(start, goal, freeSpace)
     return path, distance
 
