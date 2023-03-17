@@ -1,1 +1,0 @@
-from polygons_coverage import PolygonCover
