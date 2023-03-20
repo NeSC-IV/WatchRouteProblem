@@ -1,28 +1,47 @@
 import numpy as np
 import random
+from multiprocessing import Pool, shared_memory,Manager
 from .astar.a_star import findPath
 from ..Global import *
 
+def ColisionFreeDistance(args):#多线程求无碰撞距离
+    i = args[0]
+    polygon = args[1]
+    city_position = args[2]
+    paths = args[3]
+    distances = args[4]
+    num = len(city_position)  # 城市数量
+    for j in range(i,num):
+        path, distance = findPath(
+            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),polygon)
 
-
-def ColisionFreeDistance(freeSpace, start, goal):
-
-    path, distance = findPath(start, goal, freeSpace)
-    return path, distance
-
+        distances.append(distance)
+        paths.append(path)
 
 def record_distance(city_position, freeSpace):
-    # polygon = freeSpace.buffer(zoomRate/100)
     polygon = freeSpace
     num = len(city_position)  # 城市数量
-    paths = np.eye(num, dtype=object)
-    distances = np.zeros((num, num))  # 城市两两之间的距离
+    threadNum = 8 #计算距离时使用的进程数
+    manager = Manager()
+    tempPaths = [manager.list() for i in range(num)]
+    tempDistances = [manager.list() for i in range(num)]
     for i in range(num):
-        for j in range(i, num):
-            path, distance = ColisionFreeDistance(
-                polygon, (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]))
-            distances[i][j] = distances[j][i] = distance
-            paths[i][j] = paths[j][i] = path
+        for j in range(i):
+            tempPaths[i].append(0)
+            tempDistances[i].append(0)
+    pool = Pool(threadNum)
+
+    pool.map(ColisionFreeDistance,iterable = [(i,polygon,city_position,tempPaths[i],tempDistances[i]) for i in range(num)])
+    pool.close()
+    pool.join()
+    paths = np.eye(num, dtype=object)
+    distances = np.eye(num)
+    print(num,len(tempPaths[num-1]))
+    for i in range(num):
+        for j in range(i,num):
+            paths[i][j] = paths[j][i]=tempPaths[i][j]
+            distances[i][j] = distances[j][i] = tempDistances[i][j]
+
     return paths, distances
 
 
