@@ -4,6 +4,7 @@ import shapely
 import random
 from shapely.ops import split, nearest_points
 from shapely.validation import make_valid
+from multiprocessing import Pool, shared_memory,Manager
 
 from .compute_kernel import GetKernel
 from .compute_visibility import GetVisibilityPolygon
@@ -135,7 +136,11 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     print(polygons)
 
 
-def MaximallyCoveringConvexSubset(unCoveredPolygon, initialPolygon, watcher, d):  # MCCS
+def MaximallyCoveringConvexSubset(args):  # MCCS
+    unCoveredPolygon = args[0]
+    initialPolygon = args[1]
+    watcher = args[2]
+    d = args[3]
 
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d)  # d为可视距离
@@ -193,23 +198,19 @@ def PolygonCover(polygon, d, coverage, iterations=10):
     while ((unCoverPolygon.area / polygon.area) > (1-coverage)):
 
         point = SelectPointFromPolygon(unCoverPolygon)
-
-        R0 = MaximallyCoveringConvexSubset(unCoverPolygon, polygon, point, d)
+        R0 = MaximallyCoveringConvexSubset((unCoverPolygon, polygon, point, d))
         bestR = R0
-        coverAreaOfbestR = (R0.intersection(unCoverPolygon)).area
-        AreaOfbestR = R0.area
+        #迭代开始
         num = iterations
+        threadNum = 16
+        pointList = []
+        pool = Pool(threadNum)
         while num > 0:
-            point = SelectPointFromPolygon(R0)
-            R = MaximallyCoveringConvexSubset(
-                unCoverPolygon, polygon, point, d)
-            coverAreaOfR = (R.intersection(unCoverPolygon)).area
-            AreaOfR = R.area
-            if (coverAreaOfR > coverAreaOfbestR) or (coverAreaOfbestR == coverAreaOfbestR and AreaOfR > AreaOfbestR):
-                bestR = R
-                coverAreaOfbestR = coverAreaOfR
-                AreaOfbestR = AreaOfR
+            pointList.append(SelectPointFromPolygon(R0))
             num -= 1
+        RList =(pool.map(MaximallyCoveringConvexSubset,[(unCoverPolygon, polygon, point, d) for point in pointList]))
+        RList.append(R0)
+        bestR = max(RList,key=lambda R:(R.intersection(unCoverPolygon)).area)
 
         polygonCoverList.append(bestR)
         unCoverPolygon = unCoverPolygon.difference(bestR)

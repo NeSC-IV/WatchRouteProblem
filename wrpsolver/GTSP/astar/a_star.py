@@ -11,13 +11,13 @@ class AStarSolver(AStar):
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
     def __init__(self, polygon):
-        self.step = (zoomRate/100)
+        self.step = (zoomRate/50)
         self.polygon = polygon
         # self.polygon = polygon.buffer(zoomRate/500)
 
-    def isReachable(self, point):
-        # return self.polygon.buffer(self.step).covers(shapely.Point(point))
-        return self.polygon.contains(shapely.Point(point))
+    def isReachable(self,start, point):
+        line = shapely.LineString([start,point])
+        return self.polygon.contains(line)
 
     def heuristic_cost_estimate(self, n1, n2):
         """computes the 'direct' distance between two (x,y) tuples"""
@@ -37,20 +37,18 @@ class AStarSolver(AStar):
         x, y = node
         neighborList = [(x+self.step, y), (x-self.step, y),
                         (x, y+self.step), (x, y-self.step)]
-        return [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
+        return [neighbor for neighbor in neighborList if self.isReachable(node,neighbor)]
 
 
 def findPath(start, goal, freeSpace):
 
     # let's solve it
-    print(start,goal)
     aStarSolver = AStarSolver(freeSpace)
     step = aStarSolver.step
     start = (int(start[0]/(step)) * (step), int(start[1]/(step)) * (step))
     goal = (int(goal[0]/(step)) * (step), int(goal[1]/(step)) * (step))
     if (start == goal):
         return [start, goal], 0
-
         
     result = aStarSolver.astar(start, goal)
     foundPath = list(result)

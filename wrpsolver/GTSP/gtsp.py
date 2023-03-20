@@ -1,11 +1,12 @@
 import numpy as np
 import random
-from multiprocessing import Pool, shared_memory,Manager
+from multiprocessing import Pool,Manager
 from .astar.a_star import findPath
 from ..Global import *
 
 def ColisionFreeDistance(args):#多线程求无碰撞距离
     i = args[0]
+    print(i)
     polygon = args[1]
     city_position = args[2]
     paths = args[3]
@@ -21,7 +22,7 @@ def ColisionFreeDistance(args):#多线程求无碰撞距离
 def record_distance(city_position, freeSpace):
     polygon = freeSpace
     num = len(city_position)  # 城市数量
-    threadNum = 8 #计算距离时使用的进程数
+    threadNum = 16 #计算距离时使用的进程数
     manager = Manager()
     tempPaths = [manager.list() for i in range(num)]
     tempDistances = [manager.list() for i in range(num)]
@@ -36,7 +37,6 @@ def record_distance(city_position, freeSpace):
     pool.join()
     paths = np.eye(num, dtype=object)
     distances = np.eye(num)
-    print(num,len(tempPaths[num-1]))
     for i in range(num):
         for j in range(i,num):
             paths[i][j] = paths[j][i]=tempPaths[i][j]
@@ -82,7 +82,6 @@ def GetTrace(tspCase, freeSpace):
 
     best_solution = current_solution.copy()  # 最优路径
     bestvalue = current_value[-1]           # 最优值
-    print(bestvalue, current_value[-1])
     best_value = [bestvalue]  # 记录迭代过程中的最优解
 
     ##### 开始迭代 #####
