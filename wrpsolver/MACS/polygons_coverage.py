@@ -144,7 +144,7 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
 
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d)  # d为可视距离
-    if not (visiblePolygon.buffer(zoomRate/1000).covers(watcher)):
+    if not (visiblePolygon.buffer(zoomRate/100).covers(watcher)):
         print("error")
         exit(1)
     kernelPolygon, reflexPointList = GetKernel(visiblePolygon, watcher)

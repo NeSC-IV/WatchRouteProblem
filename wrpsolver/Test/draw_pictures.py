@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from ..Global import *
-pic_size = 1024
+pic_size = 2048
 def DrawPolygon( points, color, image):
 
     # list -> ndarray
@@ -23,7 +23,7 @@ def DrawPoints(image, x, y, color=(153, 92, 0)):
     y /= zoomRate
     x = np.round(x*pic_size).astype(np.int32)
     y = np.round(y*pic_size).astype(np.int32)
-    cv2.circle(image, (x, y), 4, color, 8)
+    cv2.circle(image, (x, y), 1, color, 8)
     return image
 
 
@@ -34,7 +34,7 @@ def DrawNum(image, x, y, num):
     y = np.round(y*pic_size).astype(np.int32)
     s_num = str(num)
     cv2.putText(image, s_num, (x, y), cv2.FONT_HERSHEY_COMPLEX,
-                0.8, (255, 255, 255), 2)
+                0.8, (0, 255, 0), 2)
 
 
 def DrawLine(image, pt1, pt2):
@@ -44,7 +44,7 @@ def DrawLine(image, pt1, pt2):
     x2 = int(pt2[0] * pic_size / zoomRate)
     y2 = int(pt2[1] * pic_size / zoomRate)
 
-    cv2.line(image, (x1, y1), (x2, y2), (122, 234, 31), 2, 8)
+    cv2.line(image, (x1, y1), (x2, y2), (0, 25, 255), 4, 4)
 
 
 def DrawPath(image, path):

@@ -13,7 +13,6 @@ class AStarSolver(AStar):
     def __init__(self, polygon):
         self.step = (zoomRate/50)
         self.polygon = polygon
-        # self.polygon = polygon.buffer(zoomRate/500)
 
     def isReachable(self,start, point):
         line = shapely.LineString([start,point])
@@ -27,7 +26,9 @@ class AStarSolver(AStar):
 
     def distance_between(self, n1, n2):
         """this method always returns 1, as two 'neighbors' are always adajcent"""
-        return self.step
+        (x1, y1) = n1
+        (x2, y2) = n2
+        return math.hypot(x2 - x1, y2 - y1)
 
     def neighbors(self, node):
         """ for a given coordinate in the maze, returns up to 4 adjacent(north,east,south,west)
@@ -35,21 +36,23 @@ class AStarSolver(AStar):
         """
 
         x, y = node
-        neighborList = [(x+self.step, y), (x-self.step, y),
-                        (x, y+self.step), (x, y-self.step)]
+        step = self.step
+        neighborList = [
+                        (x+step, y), (x-step, y),
+                        (x, y+step), (x, y-step),
+                        (x-step,y-step),(x+step,y+step),
+                        ]
         return [neighbor for neighbor in neighborList if self.isReachable(node,neighbor)]
 
+    def is_goal_reached(self, current, goal) -> bool:
+        (x1, y1) = current
+        (x2, y2) = goal
+        return (math.hypot(x2 - x1, y2 - y1)) < self.step
 
 def findPath(start, goal, freeSpace):
 
     # let's solve it
     aStarSolver = AStarSolver(freeSpace)
-    step = aStarSolver.step
-    start = (int(start[0]/(step)) * (step), int(start[1]/(step)) * (step))
-    goal = (int(goal[0]/(step)) * (step), int(goal[1]/(step)) * (step))
-    if (start == goal):
-        return [start, goal], 0
-        
     result = aStarSolver.astar(start, goal)
     foundPath = list(result)
     distance = len(foundPath) * aStarSolver.step
