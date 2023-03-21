@@ -1,3 +1,4 @@
 numpy==1.17.4
+opencv_python==4.7.0.72
 polygenerator==0.2.0
 shapely==2.0.1

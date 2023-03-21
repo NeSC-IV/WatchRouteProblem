@@ -10,7 +10,7 @@ from ..WRP_solver import WatchmanRouteProblemSolver
 from .draw_pictures import *
 
 
-def RunTest():
+def RunTest(seed = 1):
     edgeNum = 20
     iterationNum = 10
     coverageRate = 0.95
@@ -42,7 +42,7 @@ def RunTest():
 
     # 随机生成多边形
     polygon = random_polygons_generate.GetPolygon(edgeNum)
-    polygon = shapely.Polygon(vis_maps.GetPolygon(1))
+    polygon = shapely.Polygon(vis_maps.GetPolygon(seed))
 
     polygonCoverList, sampleList,order, length, path = WatchmanRouteProblemSolver(
         polygon, coverageRate, iterationNum,30000)

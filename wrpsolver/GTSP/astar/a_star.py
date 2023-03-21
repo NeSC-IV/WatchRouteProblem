@@ -11,7 +11,7 @@ class AStarSolver(AStar):
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
     def __init__(self, polygon):
-        self.step = (zoomRate/50)
+        self.step = (zoomRate/100)
         self.polygon = polygon
 
     def isReachable(self,start, point):
@@ -47,7 +47,7 @@ class AStarSolver(AStar):
     def is_goal_reached(self, current, goal) -> bool:
         (x1, y1) = current
         (x2, y2) = goal
-        return (math.hypot(x2 - x1, y2 - y1)) < self.step
+        return (math.hypot(x2 - x1, y2 - y1)) < self.step/2
 
 def findPath(start, goal, freeSpace):
 
