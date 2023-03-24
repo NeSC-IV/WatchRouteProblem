@@ -5,4 +5,4 @@ if __name__ =='__main__':
         seed = sys.argv[1]
     else:
         seed = 1
-    RunTest(seed)
+    RunTest(int(seed))

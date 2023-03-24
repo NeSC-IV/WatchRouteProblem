@@ -162,6 +162,6 @@ def GetTrace(tspCase, freeSpace):
             tabu_time.remove(0)
 
     solution = [city_position[i] for i in best_solution]
-    path = [path[best_solution[i]][best_solution[i+1]]
+    path = [path[best_solution[i]][best_solution[(i+1)%(len(best_solution))]]
             for i in range(len(best_solution)-1)]
     return solution, bestvalue, path

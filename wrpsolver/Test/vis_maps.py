@@ -18,7 +18,7 @@ def GetPolygon(seed):
 
     bbox = json_data['bbox']
     maxNum = max(bbox['max'][0],bbox['max'][1])
-    verts = (np.array(json_data['verts']) * meter2pixel / math.ceil(maxNum)).astype(np.int)
+    verts = (np.array(json_data['verts']) * meter2pixel / math.ceil(maxNum)).astype(int)
     return verts
 
     
