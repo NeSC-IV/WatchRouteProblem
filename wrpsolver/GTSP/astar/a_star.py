@@ -11,7 +11,7 @@ class AStarSolver(AStar):
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
     def __init__(self, polygon):
-        self.step = (zoomRate/100)
+        self.step = (zoomRate/50)
         self.polygon = polygon
 
     def isReachable(self,start, point):
@@ -41,6 +41,7 @@ class AStarSolver(AStar):
                         (x+step, y), (x-step, y),
                         (x, y+step), (x, y-step),
                         (x-step,y-step),(x+step,y+step),
+                        (x+step,y-step),(x-step,y+step),
                         ]
         return [neighbor for neighbor in neighborList if self.isReachable(node,neighbor)]
 

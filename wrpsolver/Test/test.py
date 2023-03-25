@@ -12,7 +12,7 @@ from .draw_pictures import *
 
 def RunTest(seed = 1):
     edgeNum = 20
-    iterationNum = 10
+    iterationNum = 16
     coverageRate = 0.95
 
     # 读取命令行参数
@@ -45,7 +45,7 @@ def RunTest(seed = 1):
     polygon = shapely.Polygon(vis_maps.GetPolygon(seed))
 
     polygonCoverList, sampleList,order, length, path = WatchmanRouteProblemSolver(
-        polygon, coverageRate, iterationNum,30000)
+        polygon, coverageRate, iterationNum,500)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0

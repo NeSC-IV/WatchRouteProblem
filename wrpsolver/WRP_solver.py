@@ -6,6 +6,7 @@ import time
 def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
     
     polygon = shapely.Polygon(polygon)
+    polygon = polygon.simplify(0.05, preserve_topology=False)
     time1 = time.time()
     convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
     print(time.time() - time1)

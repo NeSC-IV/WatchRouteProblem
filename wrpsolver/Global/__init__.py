@@ -1,6 +1,5 @@
 import shapely
 tolerance = 2
-pic_size = 1024
 zoomRate = 1000
 
 def MyRound(num, tolerance):

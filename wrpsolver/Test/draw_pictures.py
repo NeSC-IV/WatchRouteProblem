@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 from ..Global import *
-pic_size = 2048
+pic_size = 128
 def DrawPolygon( points, color, image):
 
     # list -> ndarray
     points = np.array(points)
-    points /= zoomRate
     points *= pic_size
+    points /= zoomRate
     points = np.round(points).astype(np.int32)
 
     if type(points) is np.ndarray and points.ndim == 2:
@@ -37,14 +37,14 @@ def DrawNum(image, x, y, num):
                 0.8, (0, 255, 0), 2)
 
 
-def DrawLine(image, pt1, pt2):
+def DrawLine(image, pt1, pt2,color = (0, 25, 255)):
 
     x1 = int(pt1[0] * pic_size / zoomRate)
     y1 = int(pt1[1] * pic_size / zoomRate)
     x2 = int(pt2[0] * pic_size / zoomRate)
     y2 = int(pt2[1] * pic_size / zoomRate)
 
-    cv2.line(image, (x1, y1), (x2, y2), (0, 25, 255), 4, 4)
+    cv2.line(image, (x1, y1), (x2, y2), color, 4, 4)
 
 
 def DrawPath(image, path):

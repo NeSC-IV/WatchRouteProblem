@@ -4,7 +4,7 @@ import shapely
 import random
 from shapely.ops import split, nearest_points
 from shapely.validation import make_valid
-from multiprocessing import Pool, shared_memory,Manager
+from multiprocessing import Pool
 
 from .compute_kernel import GetKernel
 from .compute_visibility import GetVisibilityPolygon
@@ -131,7 +131,7 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     tempVisiblePolygon = visiblePolygon
     polygons = list(split(tempVisiblePolygon, chord).geoms)
     for polygon in polygons:
-        if polygon.covers(watcher):
+        if polygon.buffer(zoomRate/100).covers(watcher):
             return polygon
     print(polygons)
 
@@ -140,7 +140,7 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
     unCoveredPolygon = args[0]
     initialPolygon = args[1]
     watcher = args[2]
-    d = args[3]
+    d = args[3]/2
 
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d)  # d为可视距离
@@ -192,9 +192,9 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
     return polygon
 
 
-def PolygonCover(polygon, d, coverage, iterations=10):
+def PolygonCover(polygon, d, coverage, iterations=16):
     polygonCoverList = []
-    unCoverPolygon = polygon
+    unCoverPolygon = shapely.Polygon(polygon)
     while ((unCoverPolygon.area / polygon.area) > (1-coverage)):
 
         point = SelectPointFromPolygon(unCoverPolygon)

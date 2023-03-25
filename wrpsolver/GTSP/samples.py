@@ -18,7 +18,7 @@ def GetSample(polygonList, freeSpace, dSample):
         pointList = []
         lineString = polygon.boundary
         lineList = getLineList(lineString.difference(
-            freeSpace.boundary.buffer(zoomRate/50)))
+            freeSpace.boundary.buffer(zoomRate/100)))
         for line in lineList:
             path = 0
             while (path < line.length):
