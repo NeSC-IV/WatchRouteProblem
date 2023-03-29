@@ -1,7 +1,7 @@
 import shapely
 tolerance = 2
 zoomRate = 1000
-
+step = zoomRate/200
 def MyRound(num, tolerance):
     fmt = '.' + str(tolerance) + 'f'
     return float(format(num, fmt))

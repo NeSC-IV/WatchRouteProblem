@@ -8,7 +8,7 @@ meter2pixel = zoomRate
 
 def GetPolygon(seed):
     json_path = os.path.dirname(os.path.abspath(__file__))+"/json/"
-    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_1000.txt"
+    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_10000.txt"
     map_ids = np.loadtxt(map_file, str)
 
     file_name = map_ids[seed]
@@ -19,7 +19,7 @@ def GetPolygon(seed):
     bbox = json_data['bbox']
     maxNum = max(bbox['max'][0],bbox['max'][1])
     verts = (np.array(json_data['verts']) * meter2pixel / math.ceil(maxNum)).astype(int)
-    return verts
+    return verts,file_name
 
     
 
@@ -27,7 +27,7 @@ def GetPolygon(seed):
 if __name__ == '__main__':
 
     json_path = os.path.dirname(os.path.abspath(__file__))+"/json/"
-    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_1000.txt"
+    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_10000.txt"
     # map_file = os.path.abspath(os.path.join(os.getcwd(), "./map_id_1000.txt"))
     print("---------------------------------------------------------------------")
     print("|map id set file path        |{}".format(map_file))

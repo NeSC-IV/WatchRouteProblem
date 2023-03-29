@@ -39,9 +39,10 @@ def record_distance(city_position, freeSpace):
     distances = np.eye(num)
     for i in range(num):
         for j in range(i,num):
-            paths[i][j] = paths[j][i]=tempPaths[i][j]
+            paths[i][j]  = tempPaths[i][j]
+            paths[j][i] = paths[i][j].copy()
+            paths[j][i].reverse()
             distances[i][j] = distances[j][i] = tempDistances[i][j]
-
     return paths, distances
 
 
@@ -49,7 +50,7 @@ def cal_cost(distance, solution, goods_num):
     cost = 0
     for j in range(goods_num-1):
         cost += distance[solution[j]][solution[j+1]]
-    cost += distance[solution[0]][solution[goods_num - 1]]
+    # cost += distance[solution[0]][solution[goods_num - 1]]
     return cost
 
 

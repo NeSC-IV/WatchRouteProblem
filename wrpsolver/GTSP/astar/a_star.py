@@ -2,7 +2,7 @@
 import math
 import shapely
 from . import AStar
-from ...Global import *
+from ...Global import step
 
 
 class AStarSolver(AStar):
@@ -11,7 +11,7 @@ class AStarSolver(AStar):
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
     def __init__(self, polygon):
-        self.step = (zoomRate/50)
+        self.step =step
         self.polygon = polygon
 
     def isReachable(self,start, point):
