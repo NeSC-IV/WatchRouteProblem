@@ -3,7 +3,7 @@
 import getopt
 import sys
 import cv2
-
+import shapely
 from . import random_polygons_generate
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
@@ -42,10 +42,11 @@ def RunTest(seed = 1):
 
     # 随机生成多边形
     polygon = random_polygons_generate.GetPolygon(edgeNum)
-    polygon = shapely.Polygon(vis_maps.GetPolygon(seed))
+    pointList,filename = vis_maps.GetPolygon(seed)
+    polygon = shapely.Polygon(pointList)
 
     polygonCoverList, sampleList,order, length, path = WatchmanRouteProblemSolver(
-        polygon, coverageRate, iterationNum,500)
+        polygon, coverageRate, iterationNum,800)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0
@@ -74,13 +75,13 @@ def RunTest(seed = 1):
     # 绘制sample 和 访问顺序
     for sample in sampleList:
         for point in sample:
-            DrawPoints(image, point.x, point.y)
+            DrawGridPoints(image, point.x, point.y)
 
     for i in range(len(order)):
-        DrawNum(image, order[i][0], order[i][1], i)
+        DrawGridNum(image, order[i][0], order[i][1], i)
 
     for i in range(len(path)):
-        DrawPath(image, path[i])
+        DrawGridPath(image, path[i])
     cv2.imshow('polygons', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

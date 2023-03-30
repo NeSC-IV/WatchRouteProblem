@@ -6,15 +6,14 @@ from ..Global import *
 
 def ColisionFreeDistance(args):#多线程求无碰撞距离
     i = args[0]
-    print(i)
-    polygon = args[1]
-    city_position = args[2]
-    paths = args[3]
-    distances = args[4]
+    city_position = args[1]
+    paths = args[2]
+    distances = args[3]
     num = len(city_position)  # 城市数量
+    print(i)
     for j in range(i,num):
         path, distance = findPath(
-            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),polygon)
+            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]))
 
         distances.append(distance)
         paths.append(path)
@@ -24,15 +23,15 @@ def record_distance(city_position, freeSpace):
     num = len(city_position)  # 城市数量
     threadNum = 16 #计算距离时使用的进程数
     manager = Manager()
-    tempPaths = [manager.list() for i in range(num)]
-    tempDistances = [manager.list() for i in range(num)]
+    tempPaths = [manager.list() for _ in range(num)]
+    tempDistances = [manager.list() for _ in range(num)]
     for i in range(num):
         for j in range(i):
             tempPaths[i].append(0)
             tempDistances[i].append(0)
     pool = Pool(threadNum)
 
-    pool.map(ColisionFreeDistance,iterable = [(i,polygon,city_position,tempPaths[i],tempDistances[i]) for i in range(num)])
+    pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i]) for i in range(num)])
     pool.close()
     pool.join()
     paths = np.eye(num, dtype=object)

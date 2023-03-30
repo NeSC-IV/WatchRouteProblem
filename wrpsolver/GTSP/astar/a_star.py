@@ -1,8 +1,7 @@
 
 import math
-import shapely
 from . import AStar
-from ...Global import step
+from ...Global import grid
 
 
 class AStarSolver(AStar):
@@ -10,13 +9,13 @@ class AStarSolver(AStar):
     """sample use of the astar algorithm. In this exemple we work on a maze made of ascii characters,
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
-    def __init__(self, polygon):
-        self.step =step
-        self.polygon = polygon
+    def __init__(self):
+        self.step = 1
+    def isReachable(self, point):
 
-    def isReachable(self,start, point):
-        line = shapely.LineString([start,point])
-        return self.polygon.contains(line)
+        (x,y) = point
+        return grid[y][x] != 0 #这里没写错
+
 
     def heuristic_cost_estimate(self, n1, n2):
         """computes the 'direct' distance between two (x,y) tuples"""
@@ -43,17 +42,15 @@ class AStarSolver(AStar):
                         (x-step,y-step),(x+step,y+step),
                         (x+step,y-step),(x-step,y+step),
                         ]
-        return [neighbor for neighbor in neighborList if self.isReachable(node,neighbor)]
+        return [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
 
     def is_goal_reached(self, current, goal) -> bool:
-        (x1, y1) = current
-        (x2, y2) = goal
-        return (math.hypot(x2 - x1, y2 - y1)) < self.step
+        return current == goal
 
-def findPath(start, goal, freeSpace):
+def findPath(start, goal):
 
     # let's solve it
-    aStarSolver = AStarSolver(freeSpace)
+    aStarSolver = AStarSolver()
     result = aStarSolver.astar(start, goal)
     foundPath = list(result)
     distance = len(foundPath) * aStarSolver.step

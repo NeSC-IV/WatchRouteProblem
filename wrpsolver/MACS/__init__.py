@@ -1,1 +1,1 @@
-from .polygons_coverage import PolygonCover
+from .polygons_coverage import PolygonCover,SelectMaxPolygon
