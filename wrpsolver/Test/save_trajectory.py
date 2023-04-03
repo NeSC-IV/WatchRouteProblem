@@ -1,23 +1,13 @@
 #!/usr/bin/python3.8
 # -*- coding:utf-8 -*-
 import shapely
-import time
 import json
-from . import vis_maps
-from ..WRP_solver import WatchmanRouteProblemSolver
+import os
+import shutil
+from multiprocessing import Pool
 from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
-
-def getVertex(polygon):
-    vertexList = []
-    if(type(polygon) == shapely.Polygon):
-        vertexList = list(polygon.exterior.coords)
-    elif(type(polygon) == shapely.LineString):
-        vertexList = list(polygon.coords)
-    elif(type(polygon == shapely.MultiLineString)):
-        for line in list(polygon.geoms):
-            vertexList += list(line.coords)
-    return vertexList
+from ..Global import step
 
 def drawMultiline(image, multiLine,color = (0, 25, 255)):
     
@@ -35,80 +25,70 @@ def drawMultiline(image, multiLine,color = (0, 25, 255)):
     else:
         print("unknown type")
 
+def GetpathIDs(dirPath):
 
+    pathIDs = os.listdir(dirPath)
+    pathIDs = [pathID.split('.')[0] for pathID in pathIDs]
+    return pathIDs
+
+
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
+def GetSingleTrajectory(pathID):
+        print(pathID)
+        if not os.path.exists('./pic_data/' + pathID):
+            os.mkdir('./pic_data/' + pathID )
+        try:
+            d = 800
+            image = np.empty((pic_size, pic_size, 1), dtype=np.uint8)
+            image.fill(150)
+            with open(dirPath + pathID+'.json') as jsonFile:
+                jsonData = json.load(jsonFile)
+                polygon = shapely.Polygon(jsonData['polygon'])
+                polygon = polygon
+                paths = jsonData['paths']
+
+
+            actionDict = {(step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
+                        (step,step):4,(-step,-step):5,(-step,step):6,(step,-step):7}
+
+            actionArray = []
+            visiblePolygon = None
+            cnt = 0
+            for path in paths:
+                for j in range(len(path)-1):
+                    point = shapely.Point(path[j])
+                    if(visiblePolygon == None):
+                        visiblePolygon = FindVisibleRegion(polygon,point,d)
+                    else:
+                        visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon,point,d))
+                    unknownRegion = visiblePolygon.boundary.difference(polygon.boundary.buffer(zoomRate/500))
+                    obcastle = visiblePolygon.boundary.difference(unknownRegion.buffer(zoomRate/500))
+
+                    pointNext = shapely.Point(path[j+1])
+                    actionArray.append(actionDict[round(pointNext.x-point.x),round(pointNext.y-point.y)])
+                    DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
+                    drawMultiline(image,unknownRegion,(150))
+                    drawMultiline(image,obcastle,color = (0))
+                    DrawPoints(image,point.x,point.y,(30))
+                    cv2.imwrite('./pic_data/' + pathID + '/' + str(cnt) + '.png',image)
+                    cnt+=1
+
+            jsonData = {"actionArray":actionArray}
+            with open('./pic_data/' + pathID + '/' + 'data.json','w') as f:
+                json.dump(jsonData,f)
+        except:
+            shutil.rmtree('./pic_data/' + pathID)
 def GetTrajectory(seed = 1):
-    iterationNum = 10
-    coverageRate = 0.99
-    d= 8000
+
+
     # 随机生成多边形
-    polygon = shapely.Polygon(vis_maps.GetPolygon(seed))
 
-    polygonCoverList, sampleList,order, length, paths = WatchmanRouteProblemSolver(
-        polygon, coverageRate, iterationNum,d)
-    
-    time1 = time.time()
-    image = np.empty((pic_size, pic_size, 1), dtype=np.uint8)
-    image.fill(50)
+    pool = Pool(threadNum)
+    pathIDs = GetpathIDs(dirPath)
+    pool.map(GetSingleTrajectory,pathIDs)
+    pool.close()
+    pool.join()
 
-    # DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image)
-
-
-    step = int(zoomRate/50)
-    actionDict = {(step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
-                  (step,step):4,(-step,-step):5,(-step,step):6,(step,-step):7}
-
-    visibleArray = []
-    unknownArray = []
-    obcastleArray = []
-    actionArray = []
-    visiblePolygon = None
-    for path in paths:
-        # DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image)
-        # DrawPath(image,path)
-        for i in range(len(path)):
-            point = shapely.Point(path[i])
-            # pointNext = shapely.Point(path[i+1])
-            if(visiblePolygon == None):
-               visiblePolygon = FindVisibleRegion(polygon,point,d)
-            else:
-                visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon,point,d))
-            unknownRegion = visiblePolygon.boundary.difference(polygon.boundary.buffer(zoomRate/500))
-            obcastle = visiblePolygon.boundary.difference(unknownRegion.buffer(zoomRate/500))
-
-            # visibleArray.append(getVertex(visiblePolygon))
-            # obcastleArray.append(getVertex(obcastle))
-            # unknownArray.append(getVertex(unknownRegion))
-            # actionArray.append(actionDict[round(pointNext.x-point.x),round(pointNext.y-point.y)])
-
-
-            # DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image)
-            DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-            drawMultiline(image,unknownRegion,(150))
-            drawMultiline(image,obcastle,color = (0))
-            for x in range(pic_size):
-                for y in range(pic_size):
-                    color = int(image[x][y][0])
-                    if(color==255):
-                        # visibleArray.append((x,y))
-                        pass
-                    elif(color==0):
-                        obcastleArray.append((x,y))
-                    elif(color==150):
-                        unknownArray.append((x,y))
-            # DrawPoints(image, point.x, point.y,(100,100,100))
-        # point = shapely.Point(path[-1])
-        # visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon,point,300))
-        # DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-
-        
-    cv2.imshow('polygons', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    jsonData = {"visibleArray":visibleArray,"unknownArray":unknownArray,"obcastleArray":obcastleArray,"actionArray":actionArray}
-    with open('data.json','w') as f:
-        json.dump(jsonData,f)
-    time2 = time.time()
-    print(time2-time1)
 
 
 

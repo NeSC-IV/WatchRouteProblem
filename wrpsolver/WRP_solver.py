@@ -1,12 +1,14 @@
 import shapely
 import cv2
 import numpy as np
+from func_timeout import func_set_timeout
 from . import GTSP
 from . import MACS
-from .Global import step,grid,grid_size,zoomRate
+from .Global import step,grid_size,zoomRate
 import time
+@func_set_timeout(300)
 def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
-    
+    grid = np.zeros((grid_size, grid_size, 1), dtype=np.uint8)
     polygon = shapely.Polygon(polygon)
     polygon = polygon.simplify(0.05, preserve_topology=False)
     time1 = time.time()
@@ -15,12 +17,12 @@ def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
     time1 = time.time()
     freeSpace = polygon.buffer(-(step*2))
     freeSpace = MACS.SelectMaxPolygon(freeSpace)
-    Polygon2Gird(freeSpace,255,grid)
+    grid = Polygon2Gird(freeSpace,255,grid)
     sampleList= GTSP.GetSample(convexSet,freeSpace,step*20)
     gtspCase = GTSP.postProcessing(sampleList)
     print(time.time() - time1)
     time1 = time.time()
-    order, length, path = GTSP.GetTrace(gtspCase,freeSpace)
+    order, length, path = GTSP.GetTrace(gtspCase,grid)
     print(time.time() - time1)
     time1 = time.time()
     return convexSet,sampleList,order,length,path

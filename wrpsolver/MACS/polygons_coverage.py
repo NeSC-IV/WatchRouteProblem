@@ -146,7 +146,7 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
         initialPolygon, watcher, d)  # d为可视距离
     if not (visiblePolygon.buffer(zoomRate/100).covers(watcher)):
         print("error")
-        exit(1)
+        return shapely.Point(1,1)
     kernelPolygon, reflexPointList = GetKernel(visiblePolygon, watcher)
     reflexPointList.sort(key=lambda point: shapely.distance(
         kernelPolygon, shapely.Point(point)))  # 列表排序
@@ -202,7 +202,6 @@ def PolygonCover(polygon, d, coverage, iterations=16):
         bestR = R0
         #迭代开始
         num = iterations
-        threadNum = 16
         pointList = []
         pool = Pool(threadNum)
         while num > 0:

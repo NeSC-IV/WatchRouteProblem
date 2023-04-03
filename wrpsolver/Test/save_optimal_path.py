@@ -4,8 +4,16 @@ import shapely
 import json
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
-
-
+import numpy as np
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 def SaveOptimalPath():
     iterationNum = 10
     coverageRate = 0.95
@@ -17,9 +25,8 @@ def SaveOptimalPath():
             polygon = shapely.Polygon(polygonPints)
             polygonCoverList, sampleList,order, length, paths = WatchmanRouteProblemSolver(polygon, coverageRate, iterationNum,d)
             jsonData = {'polygon':polygonPints.tolist(),'paths':paths}
-            with open('optimal_path/'+filename+'.json','w') as f:
-                json.dump(jsonData,f)
-            break
+            with open('wrpsolver/Test/optimal_path/'+filename+'.json','w') as f:
+                json.dump(jsonData,f,cls=NpEncoder)
         except:
             pass
             continue

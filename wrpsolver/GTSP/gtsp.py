@@ -9,19 +9,18 @@ def ColisionFreeDistance(args):#多线程求无碰撞距离
     city_position = args[1]
     paths = args[2]
     distances = args[3]
+    grid = args[4]
     num = len(city_position)  # 城市数量
     print(i)
     for j in range(i,num):
         path, distance = findPath(
-            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]))
+            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),grid)
 
         distances.append(distance)
         paths.append(path)
 
-def record_distance(city_position, freeSpace):
-    polygon = freeSpace
+def record_distance(city_position, grid):
     num = len(city_position)  # 城市数量
-    threadNum = 16 #计算距离时使用的进程数
     manager = Manager()
     tempPaths = [manager.list() for _ in range(num)]
     tempDistances = [manager.list() for _ in range(num)]
@@ -31,7 +30,7 @@ def record_distance(city_position, freeSpace):
             tempDistances[i].append(0)
     pool = Pool(threadNum)
 
-    pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i]) for i in range(num)])
+    pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
     pool.close()
     pool.join()
     paths = np.eye(num, dtype=object)
@@ -53,13 +52,13 @@ def cal_cost(distance, solution, goods_num):
     return cost
 
 
-def GetTrace(tspCase, freeSpace):
+def GetTrace(tspCase, grid):
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
     city_position, goods_class, city_class = tspCase
     city_num = len(city_position)             # 城市数目
     goods_num = len(set(goods_class))         # 商品种类数目
-    path, distance = record_distance(city_position, freeSpace)  # 得到距离矩阵
+    path, distance = record_distance(city_position, grid)  # 得到距离矩阵
 
     iter_num = 1000       # 迭代次数
     tabu_list = []        # 禁忌表

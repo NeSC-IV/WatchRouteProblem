@@ -1,7 +1,6 @@
 
 import math
 from . import AStar
-from ...Global import grid
 
 
 class AStarSolver(AStar):
@@ -9,10 +8,12 @@ class AStarSolver(AStar):
     """sample use of the astar algorithm. In this exemple we work on a maze made of ascii characters,
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
-    def __init__(self):
+    def __init__(self,grid):
+        self.grid = grid
         self.step = 1
     def isReachable(self, point):
 
+        grid = self.grid
         (x,y) = point
         return grid[y][x] != 0 #这里没写错
 
@@ -47,10 +48,10 @@ class AStarSolver(AStar):
     def is_goal_reached(self, current, goal) -> bool:
         return current == goal
 
-def findPath(start, goal):
+def findPath(start, goal, grid):
 
     # let's solve it
-    aStarSolver = AStarSolver()
+    aStarSolver = AStarSolver(grid)
     result = aStarSolver.astar(start, goal)
     foundPath = list(result)
     distance = len(foundPath) * aStarSolver.step
