@@ -38,13 +38,17 @@ def SelectPointFromPolygon(polygon):
 
 def FindVisibleRegion(polygon, watcher, d):
 
-    dVisibility = watcher.buffer(d)  # d范围视距
-    visiblePolygon = GetVisibilityPolygon(polygon, watcher)
-    visiblePolygon = make_valid(visiblePolygon)
-    finalVisibility = visiblePolygon.intersection(dVisibility)  # 有限视距下的可视范围
-    # finalVisibility = visiblePolygon  # 有限视距下的可视范围
+    try:
+        dVisibility = watcher.buffer(d)  # d范围视距
+        visiblePolygon = GetVisibilityPolygon(polygon, watcher)
+        visiblePolygon = make_valid(visiblePolygon)
+        finalVisibility = visiblePolygon.intersection(dVisibility)  # 有限视距下的可视范围
+        # finalVisibility = visiblePolygon  # 有限视距下的可视范围
 
-    return SelectMaxPolygon(finalVisibility)
+        return SelectMaxPolygon(finalVisibility)
+    except:
+        return None
+
 
 
 def GetKernelPolygon(visiblePolygon):

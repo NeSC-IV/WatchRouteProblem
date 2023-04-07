@@ -9,23 +9,6 @@ from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
 
-def drawMultiline(image, multiLine,color = (0, 25, 255)):
-    
-    def drawSingleline(image,line,color = (0, 25, 255)):
-        pointList = list(line.coords)
-        length = len(pointList)
-        for i in range(length-1):
-            DrawLine(image,pointList[i],pointList[i+1],color)
-
-    if(type(multiLine) == shapely.LineString):
-        drawSingleline(image,multiLine,color)
-    elif(type(multiLine) == shapely.MultiLineString):
-        for line in list(multiLine.geoms):
-            drawSingleline(image,line,color)
-    else:
-        print("unknown type")
-
-
 def GetTrajectory(seed = 1):
     iterationNum = 10
     coverageRate = 0.95
@@ -67,8 +50,8 @@ def GetTrajectory(seed = 1):
             actionArray.append(actionDict[round(pointNext.x-point.x),round(pointNext.y-point.y)])
             posArray.append((point.x,point.y))
             DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-            drawMultiline(image,unknownRegion,(150))
-            drawMultiline(image,obcastle,color = (0))
+            DrawMultiline(image,unknownRegion,(150))
+            DrawMultiline(image,obcastle,color = (0))
             DrawPoints(image,point.x,point.y,(30))
 
             cv2.imwrite('./pic_data/'+str(cnt)+'.png',image)

@@ -9,7 +9,7 @@ from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
 
-def drawMultiline(image, multiLine,color = (0, 25, 255)):
+def DrawMultiline(image, multiLine,color = (0, 25, 255)):
     
     def drawSingleline(image,line,color = (0, 25, 255)):
         pointList = list(line.coords)
@@ -67,8 +67,8 @@ def GetSingleTrajectory(pathID):
                     pointNext = shapely.Point(path[j+1])
                     actionArray.append(actionDict[round(pointNext.x-point.x),round(pointNext.y-point.y)])
                     DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-                    drawMultiline(image,unknownRegion,(150))
-                    drawMultiline(image,obcastle,color = (0))
+                    DrawMultiline(image,unknownRegion,(150))
+                    DrawMultiline(image,obcastle,color = (0))
                     DrawPoints(image,point.x,point.y,(30))
                     cv2.imwrite('./pic_data/' + pathID + '/' + str(cnt) + '.png',image)
                     cnt+=1

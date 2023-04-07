@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import shapely
 from ..Global import *
 def DrawPolygon( points, color, image):
 
@@ -67,3 +68,19 @@ def DrawGridPath(image, path):
     while i < len(path)-1:
         DrawGridLine(image, path[i], path[i+1])
         i += 1
+
+def DrawMultiline(image, multiLine,color = (0, 25, 255)):
+    
+    def drawSingleline(image,line,color = (0, 25, 255)):
+        pointList = list(line.coords)
+        length = len(pointList)
+        for i in range(length-1):
+            DrawLine(image,pointList[i],pointList[i+1],color)
+
+    if(type(multiLine) == shapely.LineString):
+        drawSingleline(image,multiLine,color)
+    elif(type(multiLine) == shapely.MultiLineString):
+        for line in list(multiLine.geoms):
+            drawSingleline(image,line,color)
+    else:
+        print("unknown type")
