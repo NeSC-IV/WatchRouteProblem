@@ -8,6 +8,7 @@ from multiprocessing import Pool
 from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
 
 def DrawMultiline(image, multiLine,color = (0, 25, 255)):
     
@@ -32,7 +33,6 @@ def GetpathIDs(dirPath):
     return pathIDs
 
 
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
 def GetSingleTrajectory(pathID):
         print(pathID)
         if not os.path.exists('./pic_data/' + pathID):
@@ -54,7 +54,8 @@ def GetSingleTrajectory(pathID):
             actionArray = []
             visiblePolygon = None
             cnt = 0
-            for path in paths:
+            for i in range(len(paths)):
+                path = paths[i]
                 for j in range(len(path)-1):
                     point = shapely.Point(path[j])
                     if(visiblePolygon == None):
@@ -70,13 +71,25 @@ def GetSingleTrajectory(pathID):
                     DrawMultiline(image,unknownRegion,(150))
                     DrawMultiline(image,obcastle,color = (0))
                     DrawPoints(image,point.x,point.y,(30))
+                    for k in range(i):
+                        prePath = paths[k]
+                        for l in range(len(prePath)-1):
+                            x = prePath[l][0]
+                            y = prePath[l][1]
+                            image[y][x] = 50
+                    for l in range(j):
+                            x = path[l][0]
+                            y = path[l][1]
+                            image[y][x] = 50
                     cv2.imwrite('./pic_data/' + pathID + '/' + str(cnt) + '.png',image)
                     cnt+=1
 
-            jsonData = {"actionArray":actionArray}
+            jsonData1 = {"actionArray":actionArray}
+            jsonData = {**jsonData1,**jsonData}
             with open('./pic_data/' + pathID + '/' + 'data.json','w') as f:
                 json.dump(jsonData,f)
-        except:
+        except Exception as e:
+            print(e)
             shutil.rmtree('./pic_data/' + pathID)
 def GetTrajectory(seed = 1):
 
