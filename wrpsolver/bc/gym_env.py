@@ -16,7 +16,7 @@ dirPath = os.path.dirname(os.path.abspath(__file__))+"/../../pic_data/"
 
 def Polygon2Gird(polygon):
 
-    grid = np.zeros((grid_size, grid_size, 1), dtype=np.uint8)
+    grid = np.zeros((grid_size, grid_size), dtype=np.uint8)
     points = list(polygon.exterior.coords)
     points = np.array(points)
     points = np.round(points).astype(np.int32)
@@ -26,7 +26,7 @@ def Polygon2Gird(polygon):
     else:
         grid = cv2.fillPoly(grid, points, 255)
 
-    return grid
+    return grid.reshape(1,200,200)
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -48,7 +48,7 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Box(low=0, high=255, shape=(grid_size, grid_size,1), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(1,grid_size, grid_size), dtype=np.uint8)
 
         # We have 4 actions, corresponding to "right", "up", "left", "down"
         self.action_space = spaces.Discrete(8)
@@ -72,11 +72,11 @@ class GridWorldEnv(gym.Env):
     def _getObservation(self,pos):
         # 更新observationPolygon和observation
 
-        self.observation = np.empty((grid_size, grid_size, 1), dtype=np.uint8)
+        self.observation = np.empty((1, grid_size, grid_size), dtype=np.uint8)
         self.observation.fill(150)
         point = shapely.Point(pos)
         polygon = self.polygon
-        image = self.observation
+        image = self.observation.reshape(200,200)
         visiblePolygon = self.observationPolygon
 
         try:
@@ -93,8 +93,9 @@ class GridWorldEnv(gym.Env):
             DrawPoints(image,point.x,point.y,(30))
 
             self.observationPolygon = visiblePolygon
-            self.observation = image
-        except:
+            self.observation = image.reshape(1,200,200)
+        except Exception as e:
+            print(e)
             return False
         else:
             return True
@@ -111,7 +112,7 @@ class GridWorldEnv(gym.Env):
             gridMap = self.gridPolygon
             x = np.random.randint(0,grid_size)
             y = np.random.randint(0,grid_size)
-            while gridMap[y][x] == 0:
+            while gridMap[0][y][x] == 0:
                 x = np.random.randint(0,grid_size)
                 y = np.random.randint(0,grid_size)
             startPos = (x,y)
@@ -146,7 +147,5 @@ class GridWorldEnv(gym.Env):
         else:
             finishReward = 0
             Done = False
-        cv2.imshow('aa',self.observation)
-        cv2.waitKey(0)
         print((exploreReward+timePunishment+finishReward))
         return self.observation, (exploreReward+timePunishment+finishReward), Done ,info
