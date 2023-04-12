@@ -6,6 +6,7 @@ import shapely
 import os
 from random import choice
 import json
+import copy
 
 from ..Test.draw_pictures import DrawMultiline,DrawPoints,DrawPolygon
 from ..MACS.polygons_coverage import FindVisibleRegion
@@ -45,6 +46,7 @@ class GridWorldEnv(gym.Env):
         self.pos = None
         self.observation = None
         self.unknownGridNum = None
+        self.path = []
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
@@ -91,6 +93,10 @@ class GridWorldEnv(gym.Env):
             DrawMultiline(image,unknownRegion,(150))
             DrawMultiline(image,obcastle,color = (0))
             DrawPoints(image,point.x,point.y,(30))
+            for point in self.path:
+                x = point[0]
+                y = point[1]
+                image[y][x] = 50
 
             self.observationPolygon = visiblePolygon
             self.observation = image.reshape(1,200,200)
@@ -107,6 +113,7 @@ class GridWorldEnv(gym.Env):
         self.pos = None
         self.observation = None
         self.unknownGridNum = None
+        self.path = []
 
         if not (startPos):
             gridMap = self.gridPolygon
@@ -118,6 +125,7 @@ class GridWorldEnv(gym.Env):
             startPos = (x,y)
         self.pos = startPos
         self._getObservation(self.pos)
+        self.path.append(copy.copy(self.pos))
         self.unknownGridNum = 0 
         for grid in np.nditer(self.observation):
             if grid == 150:
@@ -133,7 +141,9 @@ class GridWorldEnv(gym.Env):
         # if (self.gridPolygon[0][self.pos[1]][self.pos[0]] == 0):
         #     return None, -200*200 , True, None
         if not self._getObservation(self.pos):
+            print(-200*200)
             return self.observation, -200*200 , True, info
+        self.path.append(copy.copy(self.pos))
         tempGridCnt = 0
         for grid in np.nditer(self.observation):
             if grid == 150:

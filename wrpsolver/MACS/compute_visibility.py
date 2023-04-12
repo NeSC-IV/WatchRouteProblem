@@ -49,6 +49,7 @@ def GetIntersectPointList(intersection):
 
 def GetVisibilityPolygon(polygon, watcher):
 
+    polygon = polygon.simplify(0.05, preserve_topology=False)
     visibilityPolygon = []
     result = []
     if not polygon.covers(watcher):
