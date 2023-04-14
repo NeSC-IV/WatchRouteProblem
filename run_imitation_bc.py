@@ -11,7 +11,7 @@ from imitation.algorithms import bc
 from random import choice,shuffle
 from stable_baselines3.common.policies import ActorCriticCnnPolicy
 from stable_baselines3.ppo.policies import CnnPolicy
-
+from typing import Callable
 from wrpsolver.bc.gym_env import GridWorldEnv
 
 dirPath = os.path.dirname(os.path.abspath(__file__))+"/pic_data/"
@@ -45,14 +45,35 @@ def getTrajectories(args):
         print(picDataDir)
         shutil.rmtree(picDataDir)        
     trajectories.append(trajectory)
-    print(len(trajectories))
+    # print(len(trajectories))
+
+def linear_schedule(initial_value: float) -> Callable[[float], float]:
+    """
+    Linear learning rate schedule.
+
+    :param initial_value: Initial learning rate.
+    :return: schedule that computes
+      current learning rate depending on remaining progress
+    """
+    def func(progress_remaining: float) -> float:
+        """
+        Progress will decrease from 1 (beginning) to 0.
+
+        :param progress_remaining:
+        :return: current learning rate
+        """
+        return (progress_remaining**2) * initial_value
+
+    return func
+
 pool = Pool(24)
 pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in picDataDirs])
 pool.close()
 pool.join()
-# policy = CnnPolicy(env.observation_space,env.action_space,lambda _: 0.0003,)
-policy = bc.reconstruct_policy('/home/nianba/bc_policy_ppo1.th')
+policy = CnnPolicy(env.observation_space,env.action_space,lr_schedule=linear_schedule(0.001))
+# policy = bc.reconstruct_policy('/home/nianba/bc_policy_ppo1.th')
 transitions = flatten_trajectories(trajectories)
+trajectories = []
 bc_trainer = bc.BC(
     observation_space = env.observation_space,
     action_space = env.action_space,
@@ -61,5 +82,5 @@ bc_trainer = bc.BC(
     batch_size=4096,
     policy= policy
 )
-bc_trainer.train(n_epochs=10,log_interval=100)
-bc_trainer.save_policy(policy_path='/home/nianba/bc_policy_ppo1.th')
+bc_trainer.train(n_epochs=1000,log_interval=100)
+policy.save('bc_policy')

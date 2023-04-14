@@ -6,7 +6,7 @@ from . import GTSP
 from . import MACS
 from .Global import step,grid_size,zoomRate
 import time
-@func_set_timeout(300)
+@func_set_timeout(30)
 def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
     grid = np.zeros((grid_size, grid_size, 1), dtype=np.uint8)
     polygon = shapely.Polygon(polygon)

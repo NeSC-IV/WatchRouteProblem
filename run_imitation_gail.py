@@ -3,84 +3,109 @@ import cv2
 import json
 import numpy as np
 import shutil
-import shapely
 import gym
+from stable_baselines3 import A2C
 from stable_baselines3 import PPO
+from stable_baselines3 import DQN
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from imitation.data.types import Trajectory
 from imitation.data.rollout import flatten_trajectories
 from imitation.algorithms.adversarial.gail import GAIL
 from imitation.util.util import make_vec_env
-from imitation.rewards.reward_nets import BasicRewardNet
-from imitation.util.networks import RunningNorm
-from stable_baselines3.ppo import CnnPolicy
+from imitation.rewards.reward_nets import CnnRewardNet
+from stable_baselines3.a2c import CnnPolicy
 from random import choice,shuffle
-from stable_baselines3.common.env_checker import check_env
 import torch as th
+from multiprocessing import Pool,Manager
+import wrpsolver.bc.gym_env
 
-from wrpsolver.bc.gym_env import GridWorldEnv
-device = th.device("cuda" if th.cuda.is_available() else "cpu")
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/pic_data/"
-picDirNames = os.listdir(dirPath)
-picDataDirs = [(dirPath+picDirName )for picDirName in picDirNames]
-shuffle(picDataDirs)
-cnt = 0
-rewardList = []
-trajectories = []
-pointList = [[21, 1], [21, 1], [21, 50], [33, 50], [34, 50], [34, 52], [33, 52], [1, 52], [1, 54], [1, 54], [1, 83], [1, 83], [1, 109], [1, 109], [1, 125], [28, 125], [28, 126], [28, 127], [28, 127], [1, 127], [1, 198], [65, 198], [65, 197], [65, 197], [65, 127], [43, 127], [42, 127], [42, 126], [43, 125], [68, 125], [68, 126], [68, 127], [68, 127], [67, 127], [67, 198], [110, 198], [110, 127], [82, 127], [82, 127], [82, 126], [82, 125], [92, 125], [92, 114], [92, 114], [92, 102], [92, 102], [94, 102], [94, 102], [94, 125], [139, 125], [139, 126], [139, 127], [139, 127], [111, 127], [111, 128], [111, 129], [111, 198], [184, 198], [184, 127], [154, 127], [153, 127], [153, 126], [154, 126], [184, 126], [184, 27], [94, 27], [94, 27], [94, 49], [94, 49], [94, 70], [94, 70], [92, 70], [92, 70], [92, 60], [92, 60], [92, 52], [78, 52], [78, 52], [78, 50], [78, 50], [91, 50], [91, 1]]
-polygon = shapely.Polygon(pointList)
-rng = np.random.default_rng(0)
-venv = make_vec_env('IL/GridWorld-v0', n_envs=8, rng=rng)
-# venv = env
-learner = PPO(env=venv, policy=CnnPolicy)
-learner.set_parameters('gail_policy3')
-reward_net = BasicRewardNet(
-    venv.observation_space,
-    venv.action_space,
-    normalize_input_layer=RunningNorm,
-).to(device)
+def make_env(env_id, rank, seed=0):
+    """
+    Utility function for multiprocessed env.
 
-try:
-    for picDataDir in picDataDirs:
-        print('第 ' + str(cnt) +' 次训练开始：')
-        filesNames = os.listdir(picDataDir)
-        filesNames.remove('data.json')
-        picIDs = [int(fileName.split('.')[0]) for fileName in filesNames]
-        picIDs.sort()
-        picDirs = [picDataDir+'/'+str(picID)+'.png' for picID in picIDs]
-        dataDir = picDataDir+'/data.json'
-        pics = [cv2.imread(picDir,cv2.IMREAD_GRAYSCALE).reshape(1,200,200) for picDir in picDirs]
-        with open(dataDir) as json_file:
-            json_data = json.load(json_file)
-        actionList = json_data['actionArray'][:len(pics)-1]
-        pics = pics[:len(actionList)+1]
+    :param env_id: (str) the environment ID
+    :param num_env: (int) the number of environments you wish to have in subprocesses
+    :param seed: (int) the inital seed for RNG
+    :param rank: (int) index of the subprocess
+    """
+    def _init():
+        env = gym.make(env_id)
+        env.seed(seed + rank)
+        return env
+    set_random_seed(seed)
+    return _init
 
-        cnt += 1
-        try:
-            trajectory = Trajectory(pics,actionList,None,True)
-        except Exception as e:
-            print(e)
-            print(picDataDir)
-            shutil.rmtree(picDataDir)
-            exit(0)
-            
-        trajectories.append(trajectory)
-        #if(cnt % 2000 == 0):
-    transitions = flatten_trajectories(trajectories)
-    gail_trainer = GAIL(
-        demonstrations=transitions,
-        demo_batch_size=1024,
-        gen_replay_buffer_capacity=2048,
-        n_disc_updates_per_round=4,
-        venv=venv,
-        gen_algo=learner,
-        reward_net=reward_net,
-        allow_variable_horizon = True
-    )
-    gail_trainer.train(16384*2)
-except Exception as e:
-    print(e)
-finally:
-    learner.save('gail_policy3')
-    pass
+def getTrajectories(args):
+    picDataDir = args[0]
+    trajectories = args[1]
+    filesNames = os.listdir(picDataDir)
+    filesNames.remove('data.json')
+    picIDs = [int(fileName.split('.')[0]) for fileName in filesNames]
+    picIDs.sort()
+    picDirs = [picDataDir+'/'+str(picID)+'.png' for picID in picIDs]
+    dataDir = picDataDir+'/data.json'
+    pics = [cv2.imread(picDir,cv2.IMREAD_GRAYSCALE).reshape(1,200,200) for picDir in picDirs]
+    with open(dataDir) as json_file:
+        json_data = json.load(json_file)
+    actionList = json_data['actionArray'][:len(pics)-1]
+    pics = pics[:len(actionList)+1]
 
-print(rewardList)
+    try:
+        trajectory = Trajectory(pics,actionList,None,True)
+    except Exception as e:
+        print(e)
+        print(picDataDir)
+        shutil.rmtree(picDataDir)        
+    trajectories.append(trajectory)
+    print(len(trajectories))
+
+
+
+
+
+if __name__ == '__main__':
+    device = th.device("cuda" if th.cuda.is_available() else "cpu")
+    dirPath = os.path.dirname(os.path.abspath(__file__))+"/pic_data/"
+    picDirNames = os.listdir(dirPath)
+    picDataDirs = [(dirPath+picDirName )for picDirName in picDirNames]
+    shuffle(picDataDirs)
+    cnt = 0
+    rewardList = []
+    trajectories = Manager().list()
+    rng = np.random.default_rng(0)
+    venv = make_vec_env('IL/GridWorld-v0', n_envs=8, rng=rng,parallel=True)
+    # venv = make_vec_env('IL/GridWorld-v0', n_envs=8, rng=rng)
+    # venv = SubprocVecEnv([make_env('IL/GridWorld-v0', i) for i in range(16)])
+    learner = PPO(env=venv, policy='CnnPolicy',batch_size=1024,n_steps=128)
+    reward_net = CnnRewardNet(
+        venv.observation_space,
+        venv.action_space,
+        hwc_format=False,
+    ).to(device)
+
+
+
+    pool = Pool(48)
+    pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in picDataDirs])
+    pool.close()
+    pool.join()
+    try:
+        transitions = flatten_trajectories(trajectories)
+        trajectories = []
+        gail_trainer = GAIL(
+            demonstrations=transitions,
+            demo_batch_size=512,
+            gen_replay_buffer_capacity=2048,
+            n_disc_updates_per_round=4,
+            venv=venv,
+            gen_algo=learner,
+            reward_net=reward_net,
+            allow_variable_horizon = True
+        )
+        gail_trainer.train(16384*100)
+    except Exception as e:
+        print(e)
+    finally:
+        learner.save('gail_policy')
+        pass

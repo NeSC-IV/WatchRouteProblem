@@ -32,16 +32,8 @@ class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, polygon=None, startPos=None):
-        global picDirNames
         self.polygon = polygon
-        if(self.polygon == None):
-            if not picDirNames:
-                picDirNames = os.listdir(dirPath)
-            testJsonDir = dirPath + choice(picDirNames) + '/data.json'
-            with open(testJsonDir) as json_file:
-                json_data = json.load(json_file)
-            self.polygon = shapely.Polygon(json_data['polygon'])
-        self.gridPolygon = Polygon2Gird(self.polygon)
+        self.gridPolygon = None
         self.observationPolygon = None
         self.pos = None
         self.observation = None
@@ -109,11 +101,19 @@ class GridWorldEnv(gym.Env):
     def _get_info(self):
         return {"pos": self.pos}
     def reset(self, startPos=None, seed=None):
+        global picDirNames
         self.observationPolygon = None
         self.pos = None
         self.observation = None
         self.unknownGridNum = None
         self.path = []
+        if not picDirNames:
+            picDirNames = os.listdir(dirPath)
+        testJsonDir = dirPath + choice(picDirNames) + '/data.json'
+        with open(testJsonDir) as json_file:
+            json_data = json.load(json_file)
+        self.polygon = shapely.Polygon(json_data['polygon'])
+        self.gridPolygon = Polygon2Gird(self.polygon)
 
         if not (startPos):
             gridMap = self.gridPolygon
@@ -142,7 +142,7 @@ class GridWorldEnv(gym.Env):
         #     return None, -200*200 , True, None
         if not self._getObservation(self.pos):
             print(-200*200)
-            return self.observation, -200*200 , True, info
+            return self.observation, float(-200*200) , True, info
         self.path.append(copy.copy(self.pos))
         tempGridCnt = 0
         for grid in np.nditer(self.observation):
@@ -158,4 +158,4 @@ class GridWorldEnv(gym.Env):
             finishReward = 0
             Done = False
         print((exploreReward+timePunishment+finishReward))
-        return self.observation, (exploreReward+timePunishment+finishReward), Done ,info
+        return self.observation, float(exploreReward+timePunishment+finishReward), Done ,info
