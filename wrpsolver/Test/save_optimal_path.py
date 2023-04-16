@@ -15,11 +15,11 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 def SaveOptimalPath():
-    iterationNum = 10
+    iterationNum = 24
     coverageRate = 0.95
     d= 800
     # 随机生成多边形
-    for seed in range(10000):
+    for seed in range(20000,0,-1):
         try:
             polygonPints,filename= vis_maps.GetPolygon(seed)
             polygon = shapely.Polygon(polygonPints)

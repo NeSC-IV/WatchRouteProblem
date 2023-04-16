@@ -7,18 +7,17 @@ startPoint = (37, 50)
 polygon = shapely.Polygon(pointList)
 gridEnv = GridWorldEnv(polygon)
 
-image = gridEnv.reset(startPoint)
-cv2.imshow('aa',image)
-cv2.waitKey(0)
+image = gridEnv.reset(polygon,startPoint)
+# cv2.imshow('aa',image)
+# cv2.waitKey(0)
 rewardSum = 0
 Done = False
 for action in actionList:
     _,reward,Done,_ = gridEnv.step(action)
     print(reward)
     rewardSum += reward
-    print(gridEnv.observation.shape)
-    cv2.imshow('aa',gridEnv.observation)
-    cv2.waitKey(0)
+    # cv2.imshow('aa',gridEnv.observation)
+    # cv2.waitKey(0)
     if(Done):
         break
 

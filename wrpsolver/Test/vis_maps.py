@@ -8,7 +8,7 @@ meter2pixel = zoomRate
 
 def GetPolygon(seed):
     json_path = os.path.dirname(os.path.abspath(__file__))+"/json/"
-    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_10000.txt"
+    map_file = os.path.dirname(os.path.abspath(__file__))+"/map_id_35000.txt"
     map_ids = np.loadtxt(map_file, str)
 
     file_name = map_ids[seed]
