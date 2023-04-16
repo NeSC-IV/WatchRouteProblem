@@ -45,7 +45,7 @@ def getTrajectories(args):
         print(picDataDir)
         shutil.rmtree(picDataDir)        
     trajectories.append(trajectory)
-    print(len(trajectories))
+    # print(len(trajectories))
 
 def linear_schedule(initial_value: float) -> Callable[[float], float]:
     """

@@ -25,7 +25,7 @@ for i in range(10):
     observation = env.reset()
     Done = False
     state = None
-    action ,state= policy.predict(observation,state)
+    action ,state= model.predict(observation,state)
     action = int(action)
     rewardSum = 0
     while not Done:

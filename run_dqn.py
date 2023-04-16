@@ -71,7 +71,9 @@ def make_env(env_id, rank, logFile = None,seed=0):
         # env.seed(seed + rank)
         # return Monitor(env,logFile)
         return env
-    # set_random_seed(seed)
+        # set_random_seed(seed)
+        env.seed(seed + rank)
+        return env
     return _init
 
 if __name__ == "__main__":
@@ -104,4 +106,3 @@ if __name__ == "__main__":
         rewardList.append(rewardSum)
       print(f"rewardList is {rewardList} after train {i} times")
       model.save('dqn_policy')
-
