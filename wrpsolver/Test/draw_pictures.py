@@ -24,6 +24,12 @@ def DrawPoints(image, x, y, color=(153, 92, 0)):
     cv2.circle(image, (x, y), 1, color, 1)
     return image
 
+def DrawSinglePoint(image, x, y, color=30):
+    x = np.round(x*pic_size/zoomRate).astype(np.int32)
+    y = np.round(y*pic_size/zoomRate).astype(np.int32)
+    image[y][x] = color
+    return image
+
 def DrawGridPoints(image, x, y, color=(153, 92, 0)):
     x = np.round(x*pic_size/grid_size).astype(np.int32)
     y = np.round(y*pic_size/grid_size).astype(np.int32)

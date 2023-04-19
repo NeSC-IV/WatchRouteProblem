@@ -9,7 +9,8 @@ from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
 dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
-
+savePath = './wrpsolver/Test/pic_data/'
+os.makedirs(savePath, exist_ok=True)
 def DrawMultiline(image, multiLine,color = (0, 25, 255)):
     
     def drawSingleline(image,line,color = (0, 25, 255)):
@@ -35,8 +36,8 @@ def GetpathIDs(dirPath):
 
 def GetSingleTrajectory(pathID):
         print(pathID)
-        if not os.path.exists('./pic_data/' + pathID):
-            os.mkdir('./pic_data/' + pathID )
+        if not os.path.exists(savePath + pathID):
+            os.mkdir(savePath + pathID )
         try:
             d = 800
             image = np.empty((pic_size, pic_size, 1), dtype=np.uint8)
@@ -70,27 +71,28 @@ def GetSingleTrajectory(pathID):
                     DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
                     DrawMultiline(image,unknownRegion,(150))
                     DrawMultiline(image,obcastle,color = (0))
-                    DrawPoints(image,point.x,point.y,(30))
+                    # DrawPoints(image,point.x,point.y,(30))
+                    DrawSinglePoint(image,point.x,point.y,(30))
                     for k in range(i):
                         prePath = paths[k]
                         for l in range(len(prePath)-1):
                             x = prePath[l][0]
                             y = prePath[l][1]
-                            image[y][x] = 50
+                            image[y][x] = 80
                     for l in range(j):
                             x = path[l][0]
                             y = path[l][1]
-                            image[y][x] = 50
-                    cv2.imwrite('./pic_data/' + pathID + '/' + str(cnt) + '.png',image)
+                            image[y][x] = 80
+                    cv2.imwrite(savePath + pathID + '/' + str(cnt) + '.png',image)
                     cnt+=1
 
             jsonData1 = {"actionArray":actionArray}
             jsonData = {**jsonData1,**jsonData}
-            with open('./pic_data/' + pathID + '/' + 'data.json','w') as f:
+            with open(savePath + pathID + '/' + 'data.json','w') as f:
                 json.dump(jsonData,f)
         except Exception as e:
             print(e)
-            shutil.rmtree('./pic_data/' + pathID)
+            shutil.rmtree(savePath + pathID)
 def GetTrajectory(seed = 1):
 
 
