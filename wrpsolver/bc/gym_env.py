@@ -8,13 +8,16 @@ from random import choice
 import json
 import copy
 
-from ..Test.draw_pictures import DrawMultiline,DrawSinglePoint,DrawPolygon
+from ..Test.draw_pictures import DrawMultiline,DrawSinglePoint,DrawPolygon,DrawPoints
 from ..MACS.polygons_coverage import FindVisibleRegion
 step = 1
 grid_size = 200
 picDirNames = None
 dirPath = os.path.dirname(os.path.abspath(__file__))+"/../../pic_data/"
-
+def countUnkown(image):
+    ret,thresh=cv2.threshold(image,254,255,cv2.THRESH_BINARY_INV)
+    cnt = cv2.countNonZero(thresh)
+    return cnt
 def Polygon2Gird(polygon):
 
     grid = np.zeros((grid_size, grid_size), dtype=np.uint8)
@@ -74,7 +77,7 @@ class GridWorldEnv(gym.Env):
         self.observation.fill(150)
         point = shapely.Point(pos)
         polygon = self.polygon
-        image = self.observation.reshape(200,200)
+        image = self.observation[0]
         visiblePolygon = self.observationPolygon
 
         try:
@@ -88,14 +91,14 @@ class GridWorldEnv(gym.Env):
             DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
             DrawMultiline(image,unknownRegion,(150))
             DrawMultiline(image,obcastle,color = (0))
-            DrawSinglePoint(image,point.x,point.y,(30))
+            DrawPoints(image,point.x,point.y,(30))
             for point in self.path:
                 x = point[0]
                 y = point[1]
                 image[y][x] = 50
 
             self.observationPolygon = visiblePolygon
-            self.observation = image.reshape(1,200,200)
+            self.observation[0] = image
         except Exception as e:
             print(e)
             return False
@@ -139,10 +142,7 @@ class GridWorldEnv(gym.Env):
             self.pos = self.startPos
         self._getObservation(self.pos)
         self.path.append(copy.copy(self.pos))
-        self.unknownGridNum = 0 
-        for grid in np.nditer(self.observation):
-            if grid == 150:
-                self.unknownGridNum += 1
+        self.unknownGridNum = countUnkown(self.observation[0])
         info = self._get_info()
 
         return self.observation
@@ -164,10 +164,7 @@ class GridWorldEnv(gym.Env):
             Done = True
         else:
             self.path.append(copy.copy(self.pos))
-            tempGridCnt = 0
-            for grid in np.nditer(self.observation):
-                if grid == 150:
-                    tempGridCnt += 1
+            tempGridCnt = countUnkown(self.observation[0])
             exploreReward = self.unknownGridNum - tempGridCnt
             self.unknownGridNum = tempGridCnt
             timePunishment = -10

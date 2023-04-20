@@ -21,7 +21,7 @@ def DrawPolygon( points, color, image):
 def DrawPoints(image, x, y, color=(153, 92, 0)):
     x = np.round(x*pic_size/zoomRate).astype(np.int32)
     y = np.round(y*pic_size/zoomRate).astype(np.int32)
-    cv2.circle(image, (x, y), 1, color, 1)
+    cv2.circle(image, (x, y), 1, color, 2)
     return image
 
 def DrawSinglePoint(image, x, y, color=30):
@@ -53,7 +53,7 @@ def DrawLine(image, pt1, pt2,color = (0, 25, 255)):
     x2 = int(pt2[0] * pic_size / zoomRate)
     y2 = int(pt2[1] * pic_size / zoomRate)
 
-    cv2.line(image, (x1, y1), (x2, y2), color, 1)
+    cv2.line(image, (x1, y1), (x2, y2), color, 2)
 
 def DrawGridLine(image, pt1, pt2,color = (0, 25, 255)):
 

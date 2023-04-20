@@ -16,8 +16,8 @@ for action in actionList:
     _,reward,Done,_ = gridEnv.step(action)
     print(reward)
     rewardSum += reward
-    # cv2.imshow('aa',gridEnv.observation)
-    # cv2.waitKey(0)
+    cv2.imshow('aa',gridEnv.observation[0])
+    cv2.waitKey(0)
     if(Done):
         break
 
