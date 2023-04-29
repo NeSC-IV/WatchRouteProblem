@@ -35,6 +35,7 @@ def GetpathIDs(dirPath):
 
 
 def GetSingleTrajectory(pathID):
+        pathID = '0952dd0899830bfd0006b12863318943'
         print(pathID)
         if not os.path.exists(savePath + pathID):
             os.mkdir(savePath + pathID )
@@ -100,7 +101,7 @@ def GetTrajectory(seed = 1):
 
     pool = Pool(threadNum)
     pathIDs = GetpathIDs(dirPath)
-    pool.map(GetSingleTrajectory,pathIDs)
+    pool.map(GetSingleTrajectory,pathIDs[:1])
     pool.close()
     pool.join()
 

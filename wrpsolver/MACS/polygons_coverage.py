@@ -7,7 +7,7 @@ from shapely.validation import make_valid
 from multiprocessing import Pool
 
 from .compute_kernel import GetKernel
-from .compute_visibility import GetVisibilityPolygon
+from .compute_visibility import GetVisibilityPolygon,GetVisibilityPolygonCPP
 from ..Global import *
 
 
@@ -35,12 +35,14 @@ def SelectPointFromPolygon(polygon):
         if polygon.contains(p):
             return p
 
-
-def FindVisibleRegion(polygon, watcher, d):
+def FindVisibleRegion(polygon, watcher, d, useCPP = False):
 
     try:
         dVisibility = watcher.buffer(d)  # d范围视距
-        visiblePolygon = GetVisibilityPolygon(polygon, watcher)
+        if(useCPP):
+            visiblePolygon = GetVisibilityPolygonCPP(polygon, watcher)
+        else:
+            visiblePolygon = GetVisibilityPolygon(polygon, watcher)
         visiblePolygon = make_valid(visiblePolygon)
         finalVisibility = visiblePolygon.intersection(dVisibility)  # 有限视距下的可视范围
         # finalVisibility = visiblePolygon  # 有限视距下的可视范围

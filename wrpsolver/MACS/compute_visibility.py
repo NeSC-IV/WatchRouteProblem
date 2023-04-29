@@ -2,6 +2,7 @@ import shapely
 import operator
 import math
 import numpy as np
+from func_timeout import func_set_timeout
 from ..Global import *
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
@@ -21,7 +22,7 @@ def GetRayLine(watcher, vertex):
 
 
 def judgeVisible(polygon, watcher, vertex, shortenRate=0.001):
-    if(polygon.buffer(zoomRate*shortenRate).covers(shapely.LineString([watcher,vertex]))):
+    if(polygon.covers(shapely.LineString([watcher,vertex]))):
         return True
 
     return False
@@ -46,7 +47,7 @@ def GetIntersectPointList(intersection):
                 return None
     return pointList
 
-
+# @profile
 def GetVisibilityPolygon(polygon, watcher):
 
     polygon = polygon.simplify(0.05, preserve_topology=False)
@@ -68,9 +69,9 @@ def GetVisibilityPolygon(polygon, watcher):
         for intersectPoint in intersectPointList:
             if (judgeVisible(polygon, watcher, intersectPoint)):
                 visibilityPolygon.append(intersectPoint)
+                
     visibilityPolygon = sorted(visibilityPolygon, key=lambda coord: (-135 - math.degrees(math.atan2(*
                                                                               tuple(map(operator.sub, (coord.x,coord.y), (watcher.x, watcher.y)))[::-1]))) % 360, reverse=False)
-    
     bndry = (polygon.boundary.coords)
     lineStrings = [shapely.LineString(bndry[k:k+2])
                    for k in range(len(bndry) - 1)]
@@ -81,3 +82,13 @@ def GetVisibilityPolygon(polygon, watcher):
                 result.append(point)
 
     return shapely.Polygon(result).simplify(0.05, preserve_topology=False)
+
+import visibility
+def GetVisibilityPolygonCPP(polygon,wacther):
+    # polygon = polygon.simplify(0.01, preserve_topology=True)
+    pointList = list(polygon.exterior.coords)
+    pointList.pop()
+    # print(pointList)
+    # print((wacther.x,wacther.y))
+    result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y))
+    return shapely.Polygon(result)

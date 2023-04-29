@@ -3,43 +3,30 @@ import cv2
 import json
 import numpy as np
 import shutil
-import gym
-from stable_baselines3 import A2C
+import shapely
+import torch as th
 from stable_baselines3 import PPO
-from stable_baselines3 import DQN
-from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from imitation.data.types import Trajectory
 from imitation.data.rollout import flatten_trajectories
 from imitation.algorithms.adversarial.gail import GAIL
 from imitation.util.util import make_vec_env
 from imitation.rewards.reward_nets import CnnRewardNet
-from stable_baselines3.a2c import CnnPolicy
 from random import choice,shuffle
-import torch as th
 from multiprocessing import Pool,Manager
-import wrpsolver.bc.gym_env
+from wrpsolver.bc.gym_env_hwc import GridWorldEnv
 
-def make_env(env_id, rank, seed=0):
-    """
-    Utility function for multiprocessed env.
 
-    :param env_id: (str) the environment ID
-    :param num_env: (int) the number of environments you wish to have in subprocesses
-    :param seed: (int) the inital seed for RNG
-    :param rank: (int) index of the subprocess
-    """
-    def _init():
-        env = gym.make(env_id)
-        env.seed(seed + rank)
-        return env
-    set_random_seed(seed)
-    return _init
+polygon = [[40, 1], [40, 1], [40, 61], [84, 61], [84, 60], [84, 60], [85, 60], [85, 60], [86, 60], [86, 60], [86, 61], [86, 61], [86, 61], [86, 70], [86, 70], [84, 70], [84, 70], [84, 62], [38, 62], [38, 63], [1, 63], [1, 63], [1, 149], [55, 149], [55, 120], [55, 120], [55, 91], [55, 91], [55, 90], [56, 89], [57, 89], [57, 89], [84, 89], [84, 81], [84, 81], [86, 81], [86, 81], [86, 91], [86, 91], [86, 91], [86, 91], [85, 91], [85, 109], [85, 109], [85, 127], [85, 127], [85, 134], [87, 134], [87, 134], [87, 136], [87, 136], [85, 136], [85, 164], [85, 164], [85, 196], [165, 196], [165, 136], [98, 136], [98, 136], [98, 134], [98, 134], [165, 134], [165, 134], [165, 129], [166, 129], [166, 122], [166, 122], [166, 115], [166, 115], [166, 108], [166, 108], [166, 101], [166, 101], [166, 94], [166, 94], [166, 87], [166, 87], [166, 80], [167, 80], [167, 73], [167, 73], [167, 66], [167, 66], [167, 59], [167, 59], [167, 57], [125, 57], [125, 57], [125, 55], [125, 55], [169, 55], [169, 55], [199, 55], [199, 1], [115, 1], [115, 48], [115, 48], [114, 48], [114, 48], [114, 1], [86, 1], [86, 14], [86, 14], [86, 37], [86, 37], [86, 49], [86, 49], [84, 49], [84, 49], [84, 41], [84, 41], [84, 1]]
+polygon = shapely.Polygon(polygon)
+startPoint = (55, 65)
 
 def getTrajectories(args):
     picDataDir = args[0]
+    picDataDir = '/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/pic_data/pic_data/0952dd0899830bfd0006b12863318943'
     trajectories = args[1]
     filesNames = os.listdir(picDataDir)
+    if(len(filesNames) < 30):
+        return
     filesNames.remove('data.json')
     picIDs = [int(fileName.split('.')[0]) for fileName in filesNames]
     picIDs.sort()
@@ -58,54 +45,47 @@ def getTrajectories(args):
         print(picDataDir)
         shutil.rmtree(picDataDir)        
     trajectories.append(trajectory)
-    print(len(trajectories))
-
-
-
-
 
 if __name__ == '__main__':
     device = th.device("cuda" if th.cuda.is_available() else "cpu")
-    dirPath = os.path.dirname(os.path.abspath(__file__))+"/pic_data/"
+    dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data/pic_data/"
     picDirNames = os.listdir(dirPath)
-    picDataDirs = [(dirPath+picDirName )for picDirName in picDirNames]
+    picDataDirs = [(dirPath+picDirName )for picDirName in picDirNames[:1]]
     shuffle(picDataDirs)
     cnt = 0
     rewardList = []
     trajectories = Manager().list()
     rng = np.random.default_rng(0)
-    venv = make_vec_env('IL/GridWorld-v0', n_envs=8, rng=rng,parallel=True)
-    # venv = make_vec_env('IL/GridWorld-v0', n_envs=8, rng=rng)
-    # venv = SubprocVecEnv([make_env('IL/GridWorld-v0', i) for i in range(16)])
-    learner = PPO(env=venv, policy='CnnPolicy',batch_size=1024,n_steps=128)
+    venv = make_vec_env('IL/GridWorld-v0', n_envs=4, rng=rng,parallel=True)
+    # venv = GridWorldEnv(polygon,startPoint)
+    learner =PPO("CnnPolicy",venv,verbose=1,n_steps=512,gamma=0.999,batch_size=128)
     reward_net = CnnRewardNet(
         venv.observation_space,
         venv.action_space,
         hwc_format=False,
     ).to(device)
 
-
-
     pool = Pool(48)
     pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in picDataDirs])
     pool.close()
     pool.join()
-    try:
-        transitions = flatten_trajectories(trajectories)
-        trajectories = []
-        gail_trainer = GAIL(
-            demonstrations=transitions,
-            demo_batch_size=512,
-            gen_replay_buffer_capacity=2048,
-            n_disc_updates_per_round=4,
-            venv=venv,
-            gen_algo=learner,
-            reward_net=reward_net,
-            allow_variable_horizon = True
-        )
-        gail_trainer.train(16384*100)
-    except Exception as e:
-        print(e)
-    finally:
-        learner.save('gail_policy')
-        pass
+# try:
+    transitions = flatten_trajectories(trajectories)
+    trajectories = []
+    gail_trainer = GAIL(
+        demonstrations=transitions,
+        demo_batch_size=128,
+        gen_replay_buffer_capacity=2048,
+        n_disc_updates_per_round=4,
+        venv=venv,
+        gen_algo=learner,
+        reward_net=reward_net,
+        allow_variable_horizon = True
+    )
+    # gail_trainer.train(16384*1000)
+    gail_trainer.train(16384*100)
+# except Exception as e:
+#     print(e)
+# finally:
+    learner.save('gail_policy_single')
+#     pass

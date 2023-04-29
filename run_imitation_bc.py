@@ -8,17 +8,16 @@ from multiprocessing import Pool,Manager
 from imitation.data.types import Trajectory
 from imitation.data.rollout import flatten_trajectories
 from imitation.algorithms import bc
-from random import choice,shuffle
-from stable_baselines3.common.policies import ActorCriticCnnPolicy
-from stable_baselines3.ppo.policies import CnnPolicy
+from stable_baselines3 import PPO
 from typing import Callable
-from wrpsolver.bc.gym_env import GridWorldEnv
+from wrpsolver.bc.gym_env_hwc import GridWorldEnv
+from wrpsolver.bc.cunstomCnn import ResNet18
+from wrpsolver.bc.timm import EfficientnetB0,FbNetv3,MobileNet,MobileVit,XCIT,Tinynet,EfficientnetB4,NatureCNN
 
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/pic_data/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data/pic_data/"
 picDirNames = os.listdir(dirPath)
 picDataDirs = [(dirPath+picDirName )for picDirName in picDirNames]
-shuffle(picDataDirs)
-rewardList = []
+picDataDirs.sort()
 trajectories = Manager().list()
 env = GridWorldEnv()
 rng = np.random.default_rng(0)
@@ -27,6 +26,9 @@ def getTrajectories(args):
     picDataDir = args[0]
     trajectories = args[1]
     filesNames = os.listdir(picDataDir)
+    if(len(filesNames) < 30):
+        return
+    # picDataDir = '/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/pic_data/pic_data/0952dd0899830bfd0006b12863318943'
     filesNames.remove('data.json')
     picIDs = [int(fileName.split('.')[0]) for fileName in filesNames]
     picIDs.sort()
@@ -43,8 +45,9 @@ def getTrajectories(args):
     except Exception as e:
         print(e)
         print(picDataDir)
-        shutil.rmtree(picDataDir)        
-    trajectories.append(trajectory)
+        shutil.rmtree(picDataDir)
+    else:
+        trajectories.append(trajectory)
     # print(len(trajectories))
 
 def linear_schedule(initial_value: float) -> Callable[[float], float]:
@@ -62,16 +65,20 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
         :param progress_remaining:
         :return: current learning rate
         """
-        return max((progress_remaining**3) * initial_value,1e-7)
+        # return max((progress_remaining**3) * initial_value,1e-8)
+        return 3e-5
 
     return func
 
 pool = Pool(24)
-pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in picDataDirs])
+pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in picDataDirs[:100]])
 pool.close()
 pool.join()
-policy = CnnPolicy(env.observation_space,env.action_space,lr_schedule=linear_schedule(0.001))
-# policy = bc.reconstruct_policy('/home/nianba/bc_policy_ppo1.th')
+policy_kwargs = dict(
+    features_extractor_class=MobileNet,
+)
+model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048,policy_kwargs=policy_kwargs)
+# model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048)
 transitions = flatten_trajectories(trajectories)
 trajectories = []
 bc_trainer = bc.BC(
@@ -79,8 +86,9 @@ bc_trainer = bc.BC(
     action_space = env.action_space,
     demonstrations=transitions,
     rng=rng,
-    batch_size=8192,
-    policy= policy
+    policy=model.policy,
+    batch_size=2**12
 )
-bc_trainer.train(n_epochs=1000,log_interval=100)
-policy.save('bc_policy')
+bc_trainer.train(n_epochs=100,log_interval=10)
+# bc_trainer.policy.save('bc_policy_single')
+model.save('bc_policy_100_mobile.zip')
