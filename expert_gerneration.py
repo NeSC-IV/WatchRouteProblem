@@ -24,7 +24,7 @@ expert_rewards = []
 def get_expert_traj(picDataDir):
     global expert_trajs
     # picDataDir= dirPath + '0a6b669e61969b02444bbe46cac90bb6'
-    # picDataDir = '/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/pic_data/pic_data/0952dd0899830bfd0006b12863318943'
+    picDataDir = '/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/pic_data/pic_data/0952dd0899830bfd0006b12863318943'
     filesNames = os.listdir(picDataDir)
     filesNames.remove('data.json')
     picIDs = [int(fileName.split('.')[0]) for fileName in filesNames]
@@ -49,9 +49,10 @@ def get_expert_traj(picDataDir):
         stateUnknown = countUnkown(state[0])
         nextStateUnknown = countUnkown(next_state[0])
         reward = stateUnknown - nextStateUnknown
-        reward *=  0.00003
+        reward *=  0.00005
 
         if(i == len(pics)-2):
+            reward += 1
             done = True
         else:
             done = False
@@ -88,7 +89,7 @@ def get_data_stats(d, rewards, lengths):
 def main():
 
     executor = ThreadPoolExecutor(max_workers=30)
-    for _ in executor.map(get_expert_traj,picDataDirs[:200]):
+    for _ in executor.map(get_expert_traj,picDataDirs[:1]):
         pass
     get_data_stats(expert_trajs, np.array(expert_rewards), np.array(expert_lengths))
     print('Final size of Replay Buffer: {}'.format(sum(expert_trajs["lengths"])))

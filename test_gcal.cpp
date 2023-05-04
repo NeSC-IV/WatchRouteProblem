@@ -6,8 +6,8 @@
 #include <CGAL/Arr_naive_point_location.h>
 #include <istream>
 #include <vector>
-// #include <pybind11/pybind11.h>
-// #include <pybind11/stl.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <utility>
 #include <exception>
 typedef CGAL::Exact_predicates_exact_constructions_kernel               Kernel;
@@ -17,13 +17,13 @@ typedef CGAL::Arr_segment_traits_2<Kernel>                              Traits_2
 typedef CGAL::Arrangement_2<Traits_2>                                   Arrangement_2;
 typedef CGAL::Triangular_expansion_visibility_2<Arrangement_2>  TEV;
 
-  // std::vector<std::pair<double, double> > compute_visibility_cpp(std::vector<std::pair<double,double>> pointList, std::pair<double,double> watcher) {
-    int main(){
+  std::vector<std::pair<double, double> > compute_visibility_cpp(std::vector<std::pair<double,double>> pointList, std::pair<double,double> watcher) {
+    // int main(){
       //create environment
       std::vector<Point_2> points;
       std::vector<Segment_2> segments;
       std::vector<std::pair<double,double>> result;
-      std::vector<std::pair<double,double>> pointList = {{173.0, 2.0}, {173.0, 152.0}, {114.0, 152.0}, {114.0, 40.0}, {111.0, 40.0}, {111.0, 152.0}, {59.0, 152.0}, {59.0, 111.0}, {58.0, 111.0}, {58.0, 64.0}, {57.0, 63.0}, {57.0, 40.0}, {54.0, 40.0}, {54.0, 63.0}, {55.0, 64.0}, {55.0, 111.0}, {56.0, 111.0}, {56.0, 152.0}, {9.0, 152.0}, {9.0, 153.0}, {2.0, 153.0}, {2.0, 3.0}, {3.0, 2.0}};
+      // std::vector<std::pair<double,double>> pointList = {{173.0, 2.0}, {173.0, 152.0}, {114.0, 152.0}, {114.0, 40.0}, {111.0, 40.0}, {111.0, 152.0}, {59.0, 152.0}, {59.0, 111.0}, {58.0, 111.0}, {58.0, 64.0}, {57.0, 63.0}, {57.0, 40.0}, {54.0, 40.0}, {54.0, 63.0}, {55.0, 64.0}, {55.0, 111.0}, {56.0, 111.0}, {56.0, 152.0}, {9.0, 152.0}, {9.0, 153.0}, {2.0, 153.0}, {2.0, 3.0}, {3.0, 2.0}};
 
       for (auto point = pointList.begin();point!=pointList.end();++point){
         Point_2 p1(point->first,point->second);
@@ -58,10 +58,10 @@ typedef CGAL::Triangular_expansion_visibility_2<Arrangement_2>  TEV;
         y = CGAL::to_double(eit->point().y());
         result.push_back(std::make_pair(x,y));
       }
-      // return result;
+      return result;
   }
 
 
-  // PYBIND11_MODULE(visibility, m) {
-  //   m.def("compute_visibility_cpp", &compute_visibility_cpp, "A function that adds two numbers");
-  // }
+  PYBIND11_MODULE(visibility, m) {
+    m.def("compute_visibility_cpp", &compute_visibility_cpp, "A function that adds two numbers");
+  }

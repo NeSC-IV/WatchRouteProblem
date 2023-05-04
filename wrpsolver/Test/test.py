@@ -75,13 +75,13 @@ def RunTest(seed = 1):
     # 绘制sample 和 访问顺序
     for sample in sampleList:
         for point in sample:
-            DrawGridPoints(image, point.x, point.y)
+            DrawPoints(image, point.x, point.y)
 
     for i in range(len(order)):
         DrawGridNum(image, order[i][0], order[i][1], i)
 
     for i in range(len(path)):
-        DrawGridPath(image, path[i])
+        DrawPath(image, path[i])
     cv2.imshow('polygons', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

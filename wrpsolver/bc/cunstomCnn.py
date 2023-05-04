@@ -1,7 +1,7 @@
 import torch.nn as nn
+import numpy as np
 from gymnasium import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-import torch.nn as nn
 import math
 from collections import OrderedDict
 
@@ -9,14 +9,41 @@ __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
 
 
-model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
-}
+# class AlexNet(nn.Module):
+class Alexnet(BaseFeaturesExtractor):
 
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 512):
+        super().__init__(observation_space, features_dim)
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(6400, 4096),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(inplace=True),
+            nn.Linear(4096, features_dim),
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), 6400)
+        x = self.classifier(x)
+        return x
 
 def conv3x3(in_planes, out_planes, stride=1):
     # "3x3 convolution with padding"
@@ -113,12 +140,37 @@ class ResNet(nn.Module):
         x = self.group2(x)
 
         return x
+    
+# class Alexnet(BaseFeaturesExtractor):
+#     def __init__(self, observation_space: spaces.Box, features_dim: int = 512):
+#         super().__init__(observation_space, features_dim)
+#         self.model = AlexNet(512)
+#         self.model = nn.DataParallel(self.model)
 
+#     def forward(self,x):
+#         return self.model.forward(x)
 
 class ResNet18(BaseFeaturesExtractor):
     def __init__(self, observation_space: spaces.Box, features_dim: int = 512):
         super().__init__(observation_space, features_dim)
         self.model = ResNet(BasicBlock, [2, 2, 2, 2],512)
+        self.model = nn.DataParallel(self.model)
+
+    def forward(self,x):
+        return self.model.forward(x)
+class ResNet34(BaseFeaturesExtractor):
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 512):
+        super().__init__(observation_space, features_dim)
+        self.model = ResNet(BasicBlock, [3, 4, 6, 3],512)
+        self.model = nn.DataParallel(self.model)
+
+    def forward(self,x):
+        return self.model.forward(x)
+
+class ResNet34(BaseFeaturesExtractor):
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 512):
+        super().__init__(observation_space, features_dim)
+        self.model = ResNet(BasicBlock, [3, 4, 6, 3],512)
         self.model = nn.DataParallel(self.model)
 
     def forward(self,x):

@@ -8,7 +8,7 @@ import random
 from random import choice
 import json
 import copy
-import math
+import time
 from func_timeout import func_set_timeout, FunctionTimedOut
 from ..Test.draw_pictures import DrawMultiline,DrawSinglePoint,DrawPolygon,DrawPoints
 from ..MACS.polygons_coverage import FindVisibleRegion
@@ -32,23 +32,19 @@ def ObscatlePunishMent(polygon,pos):
     #one step obscatle
     try:
         if not polygon.covers(point.buffer(1)):
-            reward =  -0.005
+            reward =  -0.05
+            Done = False
+        if not polygon.covers(point.buffer(1)):
+            reward =  -0.05
             Done = False
         elif not polygon.covers(point.buffer(2)):
-            reward =  -0.003
+            reward =  -0.02
             Done = False
         elif not polygon.covers(point.buffer(3)):
-            reward =  -0.002
-            Done = False
-        elif not polygon.covers(point.buffer(4)):
-            reward =  -0.001
-            Done = False
-        elif not polygon.covers(point.buffer(5)):
-            reward =  -0.0005
+            reward =  -0.01
             Done = False
         else:
             reward = 0
-            Done = False
     except Exception as e:
         print(e)
         return 0
@@ -59,6 +55,7 @@ def countUnkown(image):
     ret,thresh=cv2.threshold(image,254,255,cv2.THRESH_BINARY_INV)
     cnt = cv2.countNonZero(thresh)
     return cnt
+
 def Polygon2Gird(polygon):
 
     grid = np.zeros((grid_size, grid_size,1), dtype=np.uint8)
@@ -72,6 +69,21 @@ def Polygon2Gird(polygon):
         grid = cv2.fillPoly(grid, points, 255)
 
     return grid
+
+def Image2Observation(image,pos):
+    observation = np.zeros((3,grid_size, grid_size), dtype=np.uint8)
+
+    ret,thresh=cv2.threshold(image,1,255,1) #obscatle
+    observation[0] = thresh.reshape(1,200,200)
+
+    ret,thresh=cv2.threshold(image,151,255,4) #unknown region
+    observation[1] = thresh.reshape(1,200,200)
+
+    observation[2][pos[1]][pos[0]] = 30
+
+
+    return observation
+
 class GridWorldEnv(gym.Env):
 
     def __init__(self, polygon=None, startPos=None):
@@ -88,7 +100,7 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Box(low=0, high=255, shape=(1,grid_size, grid_size), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(3,grid_size, grid_size), dtype=np.uint8)
 
         # We have 4 actions, corresponding to "right", "up", "left", "down"
         self.action_space = spaces.Discrete(8)
@@ -114,7 +126,7 @@ class GridWorldEnv(gym.Env):
         # 更新observationPolygon和observation
         image = np.empty((grid_size, grid_size,1), dtype=np.uint8)
         image.fill(150)
-        self.observation = image.copy().reshape(1,200,200)
+        self.observation = np.zeros((3,grid_size, grid_size), dtype=np.uint8)
         point = shapely.Point(pos)
         polygon = self.polygon
         visiblePolygon = self.observationPolygon
@@ -133,17 +145,16 @@ class GridWorldEnv(gym.Env):
             # obcastle = visiblePolygon.boundary.difference(unknownRegion.buffer(1))
 
             DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-            for p in self.path:
-                x = p[0]
-                y = p[1]
-                image[y][x] = 80
-            DrawPoints(image,point.x,point.y,(30))
-            DrawPoints(image,self.goal[0],self.goal[1],(200))
             DrawMultiline(image,obcastle,color = (0))
+            DrawSinglePoint(image,point.x,point.y,(30))
+            for point in self.path:
+                x = point[0]
+                y = point[1]
+                image[y][x] = 80
 
             self.observationPolygon = visiblePolygon
             self.image = image
-            self.observation = self.image.copy().reshape(1,200,200)
+            self.observation = Image2Observation(image,pos)
         except Exception as e:
             print(e)
             self.image = np.zeros((grid_size, grid_size,1), dtype=np.uint8)
@@ -183,10 +194,6 @@ class GridWorldEnv(gym.Env):
             self.pos = getStartPoint(self.polygon)
         else:
             self.pos = self.startPos
-
-        self.goal = getStartPoint(self.polygon)
-        self.distance = math.hypot(self.pos[0]-self.goal[0], self.pos[1]-self.goal[1])
-
         self._getObservation(self.pos)
         self.path.append(copy.copy(self.pos))
         self.unknownGridNum = countUnkown(self.image)
@@ -198,17 +205,16 @@ class GridWorldEnv(gym.Env):
         info = self._get_info()
         self.stepCnt += 1
         reward = 0
-        obscatlePunishMent , _= ObscatlePunishMent(self.polygon,self.pos)
-        # obscatlePunishMent = 0
-        if self.stepCnt > 400:
+        # obscatlePunishMent = ObscatlePunishMent(self.polygon,self.pos)
+        obscatlePunishMent = 0
+        if abs(self.pos[1])>=200 or abs(self.pos[0])>=200 or (self.image[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point(self.pos))):
+            self.pos -= direction
+            reward = -0.1
+            Done = False
+        elif self.stepCnt > 400:
             # reward = float(-200*200)
             reward = 0
             Done = True
-        elif abs(self.pos[1])>=200 or abs(self.pos[0])>=200 or (self.image[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point(self.pos))):
-            self.pos -= direction
-            reward = -0.01
-            Done = False
-
         else :
             try:
                 result = self._getObservation(self.pos)
@@ -226,22 +232,15 @@ class GridWorldEnv(gym.Env):
         if not Done:
             self.path.append(copy.copy(self.pos))
             tempGridCnt = countUnkown(self.image)
-            exploreReward = max((self.unknownGridNum - tempGridCnt) * 0.00005,0)
-            exploreReward = 0
+            exploreReward = (self.unknownGridNum - tempGridCnt + 1) * 0.00005
             self.unknownGridNum = tempGridCnt
             timePunishment = 0
             if(self.observationPolygon.area/self.polygon.area > 0.95):
                 finishReward = 1
-                finishReward = 0
+                # finishReward = 0
                 Done = True
             else:
                 finishReward = 0
                 Done = False
             reward = reward + float(exploreReward+timePunishment+finishReward+obscatlePunishMent)
-
-        distance = math.hypot(self.pos[0]-self.goal[0], self.pos[1]-self.goal[1])
-        reward = reward + (self.distance - distance) * 0.01
-        self.distance = distance
-        if(distance<=1):
-            Done = True
         return self.observation, reward, Done ,info

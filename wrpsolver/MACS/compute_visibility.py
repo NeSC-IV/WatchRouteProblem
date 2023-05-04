@@ -85,10 +85,16 @@ def GetVisibilityPolygon(polygon, watcher):
 
 import visibility
 def GetVisibilityPolygonCPP(polygon,wacther):
-    # polygon = polygon.simplify(0.01, preserve_topology=True)
-    pointList = list(polygon.exterior.coords)
+    if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
+        for p in polygon.geoms:
+            if(p.contains(wacther)):
+                pointList = list(p.exterior.coords)
+                break
+    elif(type(polygon) == shapely.Polygon):
+        pointList = list(polygon.exterior.coords)
+    else:
+        print(type(polygon))
+        return None
     pointList.pop()
-    # print(pointList)
-    # print((wacther.x,wacther.y))
     result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y))
     return shapely.Polygon(result)

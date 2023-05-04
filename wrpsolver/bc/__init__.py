@@ -1,5 +1,6 @@
 from gym.envs.registration import register
-from .gym_env_hwc import GridWorldEnv
+# from .gym_env_hwc import GridWorldEnv
+from .gym_env_pos import GridWorldEnv
 
 register(
     id='IL/GridWorld-v0',

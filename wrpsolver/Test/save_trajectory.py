@@ -9,7 +9,7 @@ from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
 dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
-savePath = './wrpsolver/Test/pic_data/'
+savePath = './wrpsolver/Test/pic_data_resize/'
 os.makedirs(savePath, exist_ok=True)
 def DrawMultiline(image, multiLine,color = (0, 25, 255)):
     
@@ -35,8 +35,6 @@ def GetpathIDs(dirPath):
 
 
 def GetSingleTrajectory(pathID):
-        pathID = '0952dd0899830bfd0006b12863318943'
-        print(pathID)
         if not os.path.exists(savePath + pathID):
             os.mkdir(savePath + pathID )
         try:
@@ -101,7 +99,7 @@ def GetTrajectory(seed = 1):
 
     pool = Pool(threadNum)
     pathIDs = GetpathIDs(dirPath)
-    pool.map(GetSingleTrajectory,pathIDs[:1])
+    pool.map(GetSingleTrajectory,pathIDs[:100])
     pool.close()
     pool.join()
 

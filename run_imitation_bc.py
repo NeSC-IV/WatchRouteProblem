@@ -10,9 +10,9 @@ from imitation.data.rollout import flatten_trajectories
 from imitation.algorithms import bc
 from stable_baselines3 import PPO
 from typing import Callable
-from wrpsolver.bc.gym_env_hwc import GridWorldEnv
-from wrpsolver.bc.cunstomCnn import ResNet18
-from wrpsolver.bc.timm import EfficientnetB0,FbNetv3,MobileNet,MobileVit,XCIT,Tinynet,EfficientnetB4,NatureCNN
+from wrpsolver.bc.gym_env_pos import GridWorldEnv
+from wrpsolver.bc.cunstomCnn import ResNet18,ResNet34,Alexnet
+from wrpsolver.bc.timm import EfficientnetB0,FbNetv3,MobileNet,MobileVit,XCIT,Tinynet,EfficientnetB4
 
 dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data/pic_data/"
 picDirNames = os.listdir(dirPath)
@@ -75,10 +75,10 @@ pool.map(getTrajectories,iterable = [(picDataDir,trajectories) for picDataDir in
 pool.close()
 pool.join()
 policy_kwargs = dict(
-    features_extractor_class=MobileNet,
+    features_extractor_class=Alexnet,
 )
-model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048,policy_kwargs=policy_kwargs)
-# model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048)
+# model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048,policy_kwargs=policy_kwargs)
+model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048)
 transitions = flatten_trajectories(trajectories)
 trajectories = []
 bc_trainer = bc.BC(
@@ -87,8 +87,8 @@ bc_trainer = bc.BC(
     demonstrations=transitions,
     rng=rng,
     policy=model.policy,
-    batch_size=2**12
+    batch_size=2**11
 )
 bc_trainer.train(n_epochs=100,log_interval=10)
 # bc_trainer.policy.save('bc_policy_single')
-model.save('bc_policy_100_mobile.zip')
+# model.save('bc_policy_100_res34.zip')
