@@ -1,4 +1,12 @@
 __pycache__
-pic_data
-optimal_path
-tmp
+pic_data*
+optimal_path*
+tmp*
+GridWorld_dqn*
+*.pkl
+*.tar.gz
+*.zip
+data*
+best_model
+*.log
+test

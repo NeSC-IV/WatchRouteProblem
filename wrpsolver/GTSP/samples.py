@@ -19,17 +19,20 @@ def GetSample(polygonList, freeSpace, dSample):
         pointList = []
         lineString = polygon.boundary
         lineList = getLineList(lineString.difference(
-            freeSpace.boundary.buffer(zoomRate/200)))
+            freeSpace.boundary.buffer(step/2)))
         for line in lineList:
             path = 0
             while (path < line.length):
                 point = shapely.line_interpolate_point(line, path)
-                if freeSpace.buffer(-zoomRate/1000).contains(point):
+                if freeSpace.covers(point):
                     pointList.append(point)
                 path += dSample
             end = shapely.get_point(line, -1)
-            if freeSpace.buffer(-zoomRate/1000).contains(end):
+            if freeSpace.covers(end):
                 pointList.append(end)
+            start = shapely.get_point(line, 0)
+            if freeSpace.covers(start):
+                pointList.append(start)
         pointList = list(dict.fromkeys(pointList))  # 去重
         sampleList.append(pointList)
     return sampleList
@@ -52,8 +55,8 @@ def postProcessing(sampleList):
     for i in range(len(cityPos)):
         x = cityPos[i][0]
         y = cityPos[i][1]
-        x = np.round(x*grid_size/zoomRate).astype(np.int32)
-        y = np.round(y*grid_size/zoomRate).astype(np.int32)
+        x = np.round(x*pic_size/zoomRate).astype(np.int32)
+        y = np.round(y*pic_size/zoomRate).astype(np.int32)
         cityPos[i] = (x,y)
     return ((cityPos, cityGoods, cityClass))
 

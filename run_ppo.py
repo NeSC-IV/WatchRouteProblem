@@ -27,7 +27,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
           testEnv = GridWorldEnv(polygon,startPoint,)
           # testEnv = GridWorldEnv()
           rewardList = []
-          for _ in range(1):
+          for _ in range(2):
             observation = testEnv.reset()
             action,state = self.model.predict(observation,deterministic=True)
             Done = False
@@ -38,7 +38,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
               rewardSum += reward
             rewardList.append(rewardSum)
           print(f"rewardList is {rewardList} after train {i} times")
-          self.model.save('test')
+          self.model.save('ppo_res18_expo')
         return True
     
 def make_env(env_id, rank, logFile = None,seed=0):
@@ -50,17 +50,15 @@ def make_env(env_id, rank, logFile = None,seed=0):
 
 if __name__ == "__main__":
     env_id = 'IL/GridWorld-v0'
-    num_cpu = 32  # Number of processes to use
+    num_cpu = 8  # Number of processes to use
     env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
     # env = VecNormalize(env, norm_obs=False, norm_reward=True,clip_obs=10.)
     callback = SaveOnBestTrainingRewardCallback(check_freq=10000)
     policy_kwargs = dict(
       features_extractor_class=ResNet18,
     )
-    model =PPO("CnnPolicy",env,verbose=1,n_steps=512,gamma=0.9,batch_size=2**11 ,policy_kwargs=policy_kwargs,learning_rate=1e-6)
-    model.set_parameters('test.zip')
-    # model =PPO("CnnPolicy",env,verbose=1,n_steps=256,gamma=0.99,batch_size=2**12)
-    # model.set_parameters('/remote-home/ums_qipeng/WatchRouteProblem/bc_policy_100_res34.zip')
-    model.learn(total_timesteps=2048*10000,progress_bar=True,log_interval=1,callback=callback)
+    model =PPO("CnnPolicy",env,verbose=1,n_steps=512,gamma=0.99,batch_size=1024,policy_kwargs=policy_kwargs)
+    model.set_parameters('ppo_res18_expo')
+    model.learn(total_timesteps=2048*10000*4,progress_bar=True,log_interval=10,callback=callback)
 
 

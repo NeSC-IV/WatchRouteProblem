@@ -4,41 +4,40 @@ import numpy as np
 from func_timeout import func_set_timeout
 from . import GTSP
 from . import MACS
-from .Global import step,grid_size,zoomRate
+from .Global import step,pic_size,zoomRate
 import time
-@func_set_timeout(30)
-def WatchmanRouteProblemSolver(polygon,coverage,iteration = 10,d = zoomRate):
-    grid = np.zeros((grid_size, grid_size, 1), dtype=np.uint8)
-    polygon = shapely.Polygon(polygon)
-    polygon = polygon.simplify(0.05, preserve_topology=False)
+import logging
+@func_set_timeout(300)
+def WatchmanRouteProblemSolver(polygon,coverage,iteration = 32,d = zoomRate):
+    gridMap = np.zeros((pic_size, pic_size, 1), dtype=np.uint8)
+    polygon = polygon.simplify(0.0001, preserve_topology=False)
     time1 = time.time()
     convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
-    print(time.time() - time1)
+    logging.debug(time.time() - time1)
     time1 = time.time()
-    freeSpace = polygon.buffer(-(step*2))
+    freeSpace = polygon.buffer(-(step*1))
     freeSpace = MACS.SelectMaxPolygon(freeSpace)
-    grid = Polygon2Gird(freeSpace,255,grid)
-    sampleList= GTSP.GetSample(convexSet,freeSpace,step*20)
+    gridMap = Polygon2Gird(freeSpace,255,gridMap)
+    sampleList= GTSP.GetSample(convexSet,freeSpace,zoomRate/10)
     gtspCase = GTSP.postProcessing(sampleList)
-    print(time.time() - time1)
+    logging.debug(time.time() - time1)
     time1 = time.time()
-    order, length, path = GTSP.GetTrace(gtspCase,grid)
-    print(time.time() - time1)
-    time1 = time.time()
+    order, length, path = GTSP.GetTrace(gtspCase,gridMap)
+    logging.debug(time.time() - time1)
     return convexSet,sampleList,order,length,path
     
-def Polygon2Gird(polygon, color, grid):
+def Polygon2Gird(polygon, color, gridMap):
 
     points = list(polygon.exterior.coords)
     # list -> ndarray
     points = np.array(points)
-    points *= grid_size
+    points *= pic_size
     points /= zoomRate
     points = np.round(points).astype(np.int32)
 
     if type(points) is np.ndarray and points.ndim == 2:
-        grid = cv2.fillPoly(grid, [points], color)
+        gridMap = cv2.fillPoly(gridMap, [points], color)
     else:
-        grid = cv2.fillPoly(grid, points, color)
+        gridMap = cv2.fillPoly(gridMap, points, color)
 
-    return grid
+    return gridMap

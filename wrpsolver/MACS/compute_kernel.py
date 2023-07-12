@@ -18,7 +18,7 @@ def GetKernel(polygon, watcher):
         rayLine = GetRayLine(point, pointRight)
         splitedPolygons = split(kernel, rayLine)
         isConvex = (((point[0] - pointLeft[0]) * (pointRight[1] - pointLeft[1]) -
-                    (pointRight[0] - pointLeft[0]) * (point[1] - pointLeft[1])) > 0)
+                    (pointRight[0] - pointLeft[0]) * (point[1] - pointLeft[1])) < 0)
         if isConvex:
             reflexPointList.append(point)
         for p in list(splitedPolygons.geoms):

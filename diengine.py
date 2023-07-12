@@ -1,10 +1,11 @@
-import gym
+
+import torch
+from wrpsolver.bc.gym_env_ding import GridWorldEnv
 from ditk import logging
 from ding.model import DQN
 from ding.policy import DQNPolicy
 from ding.envs import DingEnvWrapper, SubprocessEnvManagerV2
-from ding.envs.env_wrappers import MaxAndSkipWrapper, WarpFrameWrapper, ScaledFloatFrameWrapper, FrameStackWrapper, \
-    EvalEpisodeReturnEnv, TimeLimitWrapper
+from ding.envs.env_wrappers import  ScaledFloatFrameWrapper,EvalEpisodeReturnEnv, TimeLimitWrapper,MaxAndSkipWrapper,FrameStackWrapper,WarpFrameWrapper
 from ding.data import DequeBuffer
 from ding.config import compile_config
 from ding.framework import task
@@ -12,89 +13,40 @@ from ding.framework.context import OnlineRLContext
 from ding.framework.middleware import OffPolicyLearner, StepCollector, interaction_evaluator, data_pusher, \
     eps_greedy_handler, CkptSaver, nstep_reward_enhancer
 from ding.utils import set_pkg_seed
-import gym_super_mario_bros
-from nes_py.wrappers import JoypadSpace
-from easydict import EasyDict
-
-mario_dqn_config = dict(
-    exp_name='mario_dqn_seed0',
-    env=dict(
-        collector_env_num=8,
-        evaluator_env_num=8,
-        n_evaluator_episode=8,
-        stop_value=100000,
-        replay_path='mario_dqn_seed0/video',
-    ),
-    policy=dict(
-        cuda=True,
-        model=dict(
-            obs_shape=[4, 84, 84],
-            action_shape=2,
-            encoder_hidden_size_list=[128, 128, 256],
-            dueling=True,
-        ),
-        nstep=3,
-        discount_factor=0.99,
-        learn=dict(
-            update_per_collect=10,
-            batch_size=32,
-            learning_rate=0.0001,
-            target_update_freq=500,
-        ),
-        collect=dict(n_sample=96, ),
-        eval=dict(evaluator=dict(eval_freq=2000, )),
-        other=dict(
-            eps=dict(
-                type='exp',
-                start=1.,
-                end=0.05,
-                decay=250000,
-            ),
-            replay_buffer=dict(replay_buffer_size=100000, ),
-        ),
-    ),
-)
-mario_dqn_config = EasyDict(mario_dqn_config)
-main_config = mario_dqn_config
-mario_dqn_create_config = dict(
-    env_manager=dict(type='subprocess'),
-    policy=dict(type='dqn'),
-)
-mario_dqn_create_config = EasyDict(mario_dqn_create_config)
-create_config = mario_dqn_create_config
-
-def wrapped_mario_env():
+from wrpsolver.bc.ding_config import main_config, create_config
+def wrapped_grid_env():
     return DingEnvWrapper(
-        JoypadSpace(gym_super_mario_bros.make("SuperMarioBros-1-1-v0"), [["right"], ["right", "A"]]),
+        GridWorldEnv(),
         cfg={
             'env_wrapper': [
                 lambda env: MaxAndSkipWrapper(env, skip=4),
-                lambda env: WarpFrameWrapper(env, size=84),
+                lambda env: WarpFrameWrapper(env, size=200),
                 lambda env: ScaledFloatFrameWrapper(env),
+                lambda env: TimeLimitWrapper(env, max_limit=4000),
                 lambda env: FrameStackWrapper(env, n_frames=4),
-                lambda env: TimeLimitWrapper(env, max_limit=400),
                 lambda env: EvalEpisodeReturnEnv(env),
             ]
         }
     )
-
-
 def main():
     filename = '{}/log.txt'.format(main_config.exp_name)
     logging.getLogger(with_files=[filename]).setLevel(logging.INFO)
     cfg = compile_config(main_config, create_cfg=create_config, auto=True)
     with task.start(async_mode=False, ctx=OnlineRLContext()):
-        collector_env_num, evaluator_env_num = cfg.env.collector_env_num, cfg.env.evaluator_env_num
         collector_env = SubprocessEnvManagerV2(
-            env_fn=[wrapped_mario_env for _ in range(collector_env_num)], cfg=cfg.env.manager
+            env_fn=[wrapped_grid_env for _ in range(cfg.env.collector_env_num)],
+            cfg=cfg.env.manager
         )
         evaluator_env = SubprocessEnvManagerV2(
-            env_fn=[wrapped_mario_env for _ in range(evaluator_env_num)], cfg=cfg.env.manager
+            env_fn=[wrapped_grid_env for _ in range(cfg.env.evaluator_env_num)],
+            cfg=cfg.env.manager
         )
 
         set_pkg_seed(cfg.seed, use_cuda=cfg.policy.cuda)
 
         model = DQN(**cfg.policy.model)
+        # state_dict = torch.load('/remote-home/ums_qipeng/WatchRouteProblem/GridWorld_dqn_seed0_230507_041521/ckpt/iteration_31000.pth.tar', map_location='cpu') # 从模型文件加载模型参数
+        # model.load_state_dict(state_dict['model']) # 将模型参数载入模型
         buffer_ = DequeBuffer(size=cfg.policy.other.replay_buffer.replay_buffer_size)
         policy = DQNPolicy(cfg.policy, model=model)
 
@@ -106,7 +58,6 @@ def main():
         task.use(OffPolicyLearner(cfg, policy.learn_mode, buffer_))
         task.use(CkptSaver(policy, cfg.exp_name, train_freq=1000))
         task.run()
-
 
 if __name__ == "__main__":
     main()

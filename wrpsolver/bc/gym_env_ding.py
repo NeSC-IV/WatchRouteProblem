@@ -8,6 +8,7 @@ import random
 from random import choice
 import json
 import copy
+import math
 from func_timeout import func_set_timeout, FunctionTimedOut
 from ..Test.draw_pictures import DrawMultiline,DrawSinglePoint,DrawPolygon,DrawPoints
 from ..MACS.polygons_coverage import FindVisibleRegion
@@ -15,7 +16,7 @@ from shapely.validation import make_valid
 step = 1
 grid_size = 200
 picDirNames = None
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/../Test/pic_data/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/../Test/pic_data/pic_data/"
 
 def getStartPoint(polygon):
     temppolygon = polygon.buffer(-3)
@@ -87,7 +88,7 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Box(low=0, high=255, shape=(grid_size, grid_size, 1), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(1,grid_size, grid_size), dtype=np.uint8)
 
         # We have 4 actions, corresponding to "right", "up", "left", "down"
         self.action_space = spaces.Discrete(8)
@@ -107,13 +108,14 @@ class GridWorldEnv(gym.Env):
             6: np.array([-step, step]),
             7: np.array([step, -step]),
         }
+        self.render_mode = "rgb_array"
 
     @func_set_timeout(3)
     def _getObservation(self,pos):
         # 更新observationPolygon和observation
         image = np.empty((grid_size, grid_size,1), dtype=np.uint8)
         image.fill(150)
-        self.observation = image.copy().reshape(200,200,1)
+        self.observation = image.copy()
         point = shapely.Point(pos)
         polygon = self.polygon
         visiblePolygon = self.observationPolygon
@@ -128,20 +130,19 @@ class GridWorldEnv(gym.Env):
             if(visiblePolygon == None):
                 return False
             obcastle = visiblePolygon.boundary.intersection(polygon.boundary.buffer(1))
-            # unknownRegion = visiblePolygon.boundary.difference(polygon.boundary.buffer(1))
-            # obcastle = visiblePolygon.boundary.difference(unknownRegion.buffer(1))
 
             DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
             for p in self.path:
                 x = p[0]
                 y = p[1]
                 image[y][x] = 80
-            DrawPoints(image,point.x,point.y,(30),2)
+            DrawPoints(image,point.x,point.y,(30))
+            DrawPoints(image,self.goal[0],self.goal[1],(200))
             DrawMultiline(image,obcastle,color = (0))
 
             self.observationPolygon = visiblePolygon
             self.image = image
-            self.observation = self.image.copy().reshape(200,200,1)
+            self.observation = self.image.copy()
         except Exception as e:
             print(e)
             self.image = np.zeros((grid_size, grid_size,1), dtype=np.uint8)
@@ -173,7 +174,7 @@ class GridWorldEnv(gym.Env):
                 self.polygon = shapely.Polygon(json_data['polygon'])
                 if self.polygon.is_valid:
                     break
-        self.polygon = self.polygon.simplify(0.05, preserve_topology=False)
+        self.polygon = self.polygon.simplify(0.01, preserve_topology=True)
 
         if (startPos):
             self.pos = startPos
@@ -182,68 +183,62 @@ class GridWorldEnv(gym.Env):
         else:
             self.pos = self.startPos
 
-        try:
-            self._getObservation(self.pos)
-        except:
-            print("_getObservation Failed")
-        finally:
-            self.path.append(copy.copy(self.pos))
-            self.unknownGridNum = countUnkown(self.image)
+        self.goal = getStartPoint(self.polygon)
+        self.distance = math.hypot(self.pos[0]-self.goal[0], self.pos[1]-self.goal[1])
 
-            return self.observation
-    
+        self._getObservation(self.pos)
+        self.path.append(copy.copy(self.pos))
+        self.unknownGridNum = countUnkown(self.image)
+
+        return self.observation
     def step(self,action):
-
-        #定义变量
-        timePunishment = -0.0001
-        maxStep = 400
-        boundary = 200
-        reward = 0
-        info = self._get_info()
-        gamma = 10
-
-        #更新位置
         direction = self._action_to_direction[action]
         self.pos += direction
+        info = self._get_info()
         self.stepCnt += 1
-
-        #agent步数是否到达上限
-        if self.stepCnt >= maxStep:
+        reward = 0
+        obscatlePunishMent , _= ObscatlePunishMent(self.polygon,self.pos)
+        obscatlePunishMent *= 5
+        if self.stepCnt > 400:
+            # reward = float(-200*200)
             reward = 0
             Done = True
-
-        #agent是否移动到地图外
-        elif abs(self.pos[1])>=boundary or abs(self.pos[0])>=boundary or (self.image[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point(self.pos))):
+        elif abs(self.pos[1])>=200 or abs(self.pos[0])>=200 or (self.image[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point(self.pos))):
             self.pos -= direction
-            reward = -1
+            reward = -0.01
             Done = False
 
-        #agent是否撞上障碍物
         else :
-            result = self._getObservation(self.pos)
-            if not result:
-                reward = -1
+            try:
+                result = self._getObservation(self.pos)
+                if not result:
+                    reward = -0.01
+                    Done = True
+                else:
+                    Done = False
+            except FunctionTimedOut as e:
+                print(e)
+                reward = 0
                 Done = True
-            else:
-                Done = False
 
-        #计算奖励
         if not Done:
+            self.path.append(copy.copy(self.pos))
             tempGridCnt = countUnkown(self.image)
             exploreReward = max((self.unknownGridNum - tempGridCnt) * 0.00005,0)
             self.unknownGridNum = tempGridCnt
-
-            obscatlePunishMent , _= ObscatlePunishMent(self.polygon,self.pos)
-            
-            if(self.observationPolygon.area/self.polygon.area > 0.95):
-                finishReward = 0
+            timePunishment = 0
+            if(self.observationPolygon.area/self.polygon.area > 0.99):
+                finishReward = 1
                 Done = True
             else:
                 finishReward = 0
                 Done = False
             reward = reward + float(exploreReward+timePunishment+finishReward+obscatlePunishMent)
 
-        #更新路径
-        self.path.append(copy.copy(self.pos))
-
-        return self.observation, reward*gamma, Done ,info
+        # distance = math.hypot(self.pos[0]-self.goal[0], self.pos[1]-self.goal[1])
+        # reward = reward + (self.distance - distance) * 0.0005
+        # self.distance = distance
+        # if(distance<=1):
+        #     Done = True
+        cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp/'+str( self.stepCnt)+'.png',self.observation)
+        return self.observation, reward*10, Done ,info

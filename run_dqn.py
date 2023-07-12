@@ -38,7 +38,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
               rewardSum += reward
             rewardList.append(rewardSum)
           print(f"rewardList is {rewardList} after train {i} times")
-          self.model.save('dqn_res34')
+          self.model.save('dqn_res18_expo1')
         return True
     
 def make_env(env_id, rank, logFile = None,seed=0):
@@ -57,9 +57,8 @@ if __name__ == "__main__":
     policy_kwargs = dict(
       features_extractor_class=ResNet18,
     )
-    model =DQN("CnnPolicy",env,verbose=1,gamma=0,batch_size=32 ,policy_kwargs=policy_kwargs)
-    # model =PPO("CnnPolicy",env,verbose=1,n_steps=2048,gamma=0.999,batch_size=8192)
-    # model.set_parameters('/remote-home/ums_qipeng/WatchRouteProblem/ppo_with_bc100_res34.zip')
+    model =DQN("CnnPolicy",env,verbose=1,gamma=0.95,batch_size=32 ,policy_kwargs=policy_kwargs,exploration_initial_eps = 1,exploration_final_eps = 0.2)
+    # model.set_parameters('/remote-home/ums_qipeng/WatchRouteProblem/dqn_res18_expo.zip')
     model.learn(total_timesteps=2048*10000,progress_bar=True,log_interval=1,callback=callback)
 
 

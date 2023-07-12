@@ -87,7 +87,7 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Box(low=0, high=255, shape=(grid_size, grid_size, 1), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(1,grid_size, grid_size), dtype=np.uint8)
 
         # We have 4 actions, corresponding to "right", "up", "left", "down"
         self.action_space = spaces.Discrete(8)
@@ -113,7 +113,7 @@ class GridWorldEnv(gym.Env):
         # 更新observationPolygon和observation
         image = np.empty((grid_size, grid_size,1), dtype=np.uint8)
         image.fill(150)
-        self.observation = image.copy().reshape(200,200,1)
+        self.observation = image.copy().reshape(1,200,200)
         point = shapely.Point(pos)
         polygon = self.polygon
         visiblePolygon = self.observationPolygon
@@ -136,12 +136,12 @@ class GridWorldEnv(gym.Env):
                 x = p[0]
                 y = p[1]
                 image[y][x] = 80
-            DrawPoints(image,point.x,point.y,(30),2)
+            DrawPoints(image,point.x,point.y,(30))
             DrawMultiline(image,obcastle,color = (0))
 
             self.observationPolygon = visiblePolygon
             self.image = image
-            self.observation = self.image.copy().reshape(200,200,1)
+            self.observation = self.image.copy().reshape(1,200,200)
         except Exception as e:
             print(e)
             self.image = np.zeros((grid_size, grid_size,1), dtype=np.uint8)
@@ -182,15 +182,12 @@ class GridWorldEnv(gym.Env):
         else:
             self.pos = self.startPos
 
-        try:
-            self._getObservation(self.pos)
-        except:
-            print("_getObservation Failed")
-        finally:
-            self.path.append(copy.copy(self.pos))
-            self.unknownGridNum = countUnkown(self.image)
 
-            return self.observation
+        self._getObservation(self.pos)
+        self.path.append(copy.copy(self.pos))
+        self.unknownGridNum = countUnkown(self.image)
+
+        return self.observation
     
     def step(self,action):
 
@@ -199,7 +196,7 @@ class GridWorldEnv(gym.Env):
         maxStep = 400
         boundary = 200
         reward = 0
-        info = self._get_info()
+        info = None
         gamma = 10
 
         #更新位置

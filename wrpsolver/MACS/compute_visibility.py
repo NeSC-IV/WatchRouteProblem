@@ -1,7 +1,7 @@
 import shapely
 import operator
 import math
-import numpy as np
+import time
 from func_timeout import func_set_timeout
 from ..Global import *
 def GetRayLine(watcher, vertex):
@@ -83,8 +83,10 @@ def GetVisibilityPolygon(polygon, watcher):
 
     return shapely.Polygon(result).simplify(0.05, preserve_topology=False)
 
-import visibility
+@func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):
+    import visibility
+    polygon = polygon.simplify(0.05, preserve_topology=False)
     if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
         for p in polygon.geoms:
             if(p.contains(wacther)):

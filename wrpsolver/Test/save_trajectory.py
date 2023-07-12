@@ -8,24 +8,10 @@ from multiprocessing import Pool
 from ..MACS.polygons_coverage import FindVisibleRegion
 from .draw_pictures import *
 from ..Global import step
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
-savePath = './wrpsolver/Test/pic_data_resize/'
+from shapely.validation import make_valid
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_picsize100/"
+savePath = './wrpsolver/Test/pic_data_picsize100/'
 os.makedirs(savePath, exist_ok=True)
-def DrawMultiline(image, multiLine,color = (0, 25, 255)):
-    
-    def drawSingleline(image,line,color = (0, 25, 255)):
-        pointList = list(line.coords)
-        length = len(pointList)
-        for i in range(length-1):
-            DrawLine(image,pointList[i],pointList[i+1],color)
-
-    if(type(multiLine) == shapely.LineString):
-        drawSingleline(image,multiLine,color)
-    elif(type(multiLine) == shapely.MultiLineString):
-        for line in list(multiLine.geoms):
-            drawSingleline(image,line,color)
-    else:
-        print("unknown type")
 
 def GetpathIDs(dirPath):
 
@@ -39,17 +25,24 @@ def GetSingleTrajectory(pathID):
             os.mkdir(savePath + pathID )
         try:
             d = 800
-            image = np.empty((pic_size, pic_size, 1), dtype=np.uint8)
-            image.fill(150)
+            step = 1
+            image = np.zeros((pic_size, pic_size, 1), dtype=np.uint8)
+
+
             with open(dirPath + pathID+'.json') as jsonFile:
                 jsonData = json.load(jsonFile)
                 polygon = shapely.Polygon(jsonData['polygon'])
-                polygon = polygon
+                a = shapely.Polygon([(0,0),(zoomRate,0),(zoomRate,zoomRate),((0,zoomRate))])
+                # a = polygon.buffer(1)
+                o = a.difference(polygon)
                 paths = jsonData['paths']
+                if(len(paths) < 3):
+                    shutil.rmtree(savePath + pathID)
+                    return
 
 
             actionDict = {(step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
-                        (step,step):4,(-step,-step):5,(-step,step):6,(step,-step):7}
+                        (step,step):4,(-step,-step):5,(-step,step):6,(step,-step):7,(0,0):8}
 
             actionArray = []
             visiblePolygon = None
@@ -57,21 +50,23 @@ def GetSingleTrajectory(pathID):
             for i in range(len(paths)):
                 path = paths[i]
                 for j in range(len(path)-1):
-                    point = shapely.Point(path[j])
+                    
+                    point = shapely.Point(path[j][0]*10,path[j][1]*10)
                     if(visiblePolygon == None):
-                        visiblePolygon = FindVisibleRegion(polygon,point,d)
+                        visiblePolygon = FindVisibleRegion(polygon,point,d,True)
                     else:
-                        visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon,point,d))
-                    unknownRegion = visiblePolygon.boundary.difference(polygon.boundary.buffer(zoomRate/500))
-                    obcastle = visiblePolygon.boundary.difference(unknownRegion.buffer(zoomRate/500))
+                        visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon,point,d,True))
+                    # obcastle = visiblePolygon.intersection(polygon.boundary.buffer(0.5))
+                    obcastle = o.intersection(visiblePolygon.buffer(zoomRate/pic_size)).buffer(0.5)
 
-                    pointNext = shapely.Point(path[j+1])
-                    actionArray.append(actionDict[round(pointNext.x-point.x),round(pointNext.y-point.y)])
-                    DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
-                    DrawMultiline(image,unknownRegion,(150))
-                    DrawMultiline(image,obcastle,color = (0))
-                    # DrawPoints(image,point.x,point.y,(30))
-                    DrawSinglePoint(image,point.x,point.y,(30))
+                    pointNext = shapely.Point(path[j+1][0]*10,path[j+1][1]*10)
+                    actionArray.append(actionDict[round((pointNext.x-point.x)/10),round((pointNext.y-point.y)/10)])
+                    image.fill(150)
+
+                    DrawMultiline(image,obcastle,color = (0),zoomRate=(pic_size/zoomRate))
+                    DrawPolygon( list(visiblePolygon.exterior.coords), (255), image,zoomRate=(pic_size/zoomRate))
+                    DrawPoints(image,point.x,point.y,(30),zoomRate=(pic_size/zoomRate))
+                    # DrawSinglePoint(image,point.x,point.y,(30))
                     for k in range(i):
                         prePath = paths[k]
                         for l in range(len(prePath)-1):
@@ -87,6 +82,9 @@ def GetSingleTrajectory(pathID):
 
             jsonData1 = {"actionArray":actionArray}
             jsonData = {**jsonData1,**jsonData}
+            if(visiblePolygon.area / polygon.area < 0.9):
+                shutil.rmtree(savePath + pathID)
+                return
             with open(savePath + pathID + '/' + 'data.json','w') as f:
                 json.dump(jsonData,f)
         except Exception as e:
@@ -99,7 +97,7 @@ def GetTrajectory(seed = 1):
 
     pool = Pool(threadNum)
     pathIDs = GetpathIDs(dirPath)
-    pool.map(GetSingleTrajectory,pathIDs[:100])
+    pool.map(GetSingleTrajectory,pathIDs[:])
     pool.close()
     pool.join()
 

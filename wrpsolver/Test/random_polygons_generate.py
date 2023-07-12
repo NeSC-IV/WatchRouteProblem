@@ -1,8 +1,5 @@
 #!/usr/bin/python3.8
 # -*- coding:utf-8 -*-
-from polygenerator import (
-    random_polygon,
-)
 from .draw_pictures import *
 from shapely import Polygon
 import random

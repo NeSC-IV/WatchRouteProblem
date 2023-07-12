@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import logging
 from multiprocessing import Pool,Manager
 from .astar.a_star import findPath
 from ..Global import *
@@ -11,7 +12,7 @@ def ColisionFreeDistance(args):#多线程求无碰撞距离
     distances = args[3]
     grid = args[4]
     num = len(city_position)  # 城市数量
-    print(i)
+    logging.debug(i)
     for j in range(i,num):
         path, distance = findPath(
             (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),grid)
@@ -60,7 +61,7 @@ def GetTrace(tspCase, grid):
     goods_num = len(set(goods_class))         # 商品种类数目
     path, distance = record_distance(city_position, grid)  # 得到距离矩阵
 
-    iter_num = 1000       # 迭代次数
+    iter_num = 5000       # 迭代次数
     tabu_list = []        # 禁忌表
     tabu_time = []        # 禁忌时间表
     current_tabu_num = 0  # 当前禁忌对象数量
