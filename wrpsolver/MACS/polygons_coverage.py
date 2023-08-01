@@ -11,18 +11,21 @@ from .compute_visibility import GetVisibilityPolygon,GetVisibilityPolygonCPP
 from ..Global import *
 from ..Test.draw_pictures import *
 def SelectMaxPolygon(polygons):
-    MaxPolygon = shapely.Point(1,1)
+    MaxPolygon = None
     if polygons is None:
+        print("polygons is None")
         return None
     elif (type(polygons) == shapely.Polygon):
         MaxPolygon = polygons
     else:
         for p in list(polygons.geoms):
-            if (type(p) == shapely.MultiPolygon):
+            if (type(p) == shapely.MultiPolygon) or (type(p) == shapely.GeometryCollection):
                 p = SelectMaxPolygon(p)
-            elif (type(p) == shapely.Polygon) and p.area > MaxPolygon.area:
+            elif MaxPolygon == None or ((type(p) == shapely.Polygon) and p.area > MaxPolygon.area):
                 MaxPolygon = p
-    return MaxPolygon.simplify(0.05,False)
+    if(MaxPolygon) == None:
+        print("SelectMaxPolygon Failed",type(polygons))
+    return MaxPolygon
 
 
 def SelectPointFromPolygon(polygon):
@@ -35,7 +38,6 @@ def SelectPointFromPolygon(polygon):
                           random.uniform(miny, maxy))
         if polygon.contains(p):
             return p
-
 def FindVisibleRegion(polygon, watcher, d, useCPP = False):
 
     try:
@@ -52,7 +54,7 @@ def FindVisibleRegion(polygon, watcher, d, useCPP = False):
         # dVisibility = watcher.buffer(d)  # d范围视距
         # finalVisibility = visiblePolygon.intersection(dVisibility)  # 有限视距下的可视范围
 
-        return visiblePolygon
+        return visiblePolygon.simplify(0.1, preserve_topology=False)
     except :
         print("FindVisibleRegion failed")
         return None
@@ -69,15 +71,15 @@ def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
     yGap = vertex[1] - watcher[1]
     if (xGap == 0):
-        extendRate = MyRound(2*zoomRate/abs(yGap), tolerance)
+        extendRate = MyRound(2*pic_size/abs(yGap), tolerance)
         extendPoint1 = (watcher[0], watcher[1] + yGap*extendRate)
         extendPoint2 = (watcher[0], watcher[1] - yGap*extendRate)
     elif (yGap == 0):
-        extendRate = MyRound(2*zoomRate/abs(xGap), tolerance)
+        extendRate = MyRound(2*pic_size/abs(xGap), tolerance)
         extendPoint1 = (watcher[0] + xGap*extendRate, watcher[1])
         extendPoint2 = (watcher[0] - xGap*extendRate, watcher[1])
     else:
-        extendRate = max(2*zoomRate/abs(xGap), 2*zoomRate/abs(yGap))
+        extendRate = max(2*pic_size/abs(xGap), 2*pic_size/abs(yGap))
         extendRate = MyRound(extendRate, tolerance)
         extendPoint1 = (
             MyRound(watcher[0] + xGap*extendRate, tolerance), MyRound(watcher[1] + yGap*extendRate, tolerance))
@@ -139,7 +141,7 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     tempVisiblePolygon = visiblePolygon
     polygons = list(split(tempVisiblePolygon, chord).geoms)
     for polygon in polygons:
-        if polygon.buffer(zoomRate/1000).covers(watcher):
+        if polygon.buffer(1).covers(watcher):
             return polygon
     print(polygons)
 

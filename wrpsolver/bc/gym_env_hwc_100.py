@@ -13,16 +13,16 @@ from ..MACS.polygons_coverage import FindVisibleRegion
 step = 1
 pic_size = 100
 picDirNames = None
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/../Test/pic_data_new/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/../Test/pic_data_picsize100_new/"
 
 def getStartPoint(polygon):
-    temppolygon = polygon.buffer(-10)
+    temppolygon = polygon.buffer(-step)
     minx, miny, maxx, maxy = temppolygon.bounds
     while True:
         p = shapely.Point(random.uniform(minx, maxx),
                           random.uniform(miny, maxy))
         if temppolygon.covers(p):
-            return (int(p.x/10),int(p.y/10))
+            return (int(p.x),int(p.y))
 
 
 def countUnkown(image):
@@ -69,41 +69,39 @@ class GridWorldEnv(gym.Env):
             5: np.array([-step, -step]),
             6: np.array([-step, step]),
             7: np.array([step, -step]),
-            8: np.array([0, 0]),
         }
 
     def _getObservation(self,pos):
         image = np.empty((pic_size, pic_size,1), dtype=np.uint8)
         image.fill(150)
-        self.observation = image.copy().reshape(pic_size,pic_size,1)
-        point = shapely.Point((pos[0]*10,pos[1]*10))
-        polygon = self.polygon
+        point = shapely.Point((pos[0],pos[1]))
         visiblePolygon = self.observationPolygon
 
         try:
             if not self.polygon.covers(point):
                 print("polygon not contains point")
                 return False
+            
             if(visiblePolygon == None):
-                visiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point,d= 800,useCPP=True)
+                visiblePolygon = FindVisibleRegion(polygon=self.polygon,watcher = point,d= 80,useCPP=True)
             else:
-                visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon=polygon,watcher = point,d= 800,useCPP=True))
+                visiblePolygon = visiblePolygon.union(FindVisibleRegion(polygon=self.polygon,watcher = point,d= 80,useCPP=True))
+            visiblePolygon = visiblePolygon.simplify(0.1, preserve_topology=False)
             if(visiblePolygon == None):
                 return False
-            obcastle = self.o.intersection(visiblePolygon.buffer(1000/pic_size))
-            # obcastle = visiblePolygon.boundary.intersection(polygon.boundary.buffer(1))
-
-            DrawPolygon( list(visiblePolygon.exterior.coords), (255), image, zoomRate = 0.1)
+            
+            obcastle = self.o.intersection(visiblePolygon.buffer(0.5))
+            DrawPolygon( list(visiblePolygon.exterior.coords), (255), image)
             for p in self.path:
                 x = p[0]
                 y = p[1]
                 image[y][x] = 80
-            DrawPoints(image,point.x,point.y,(30),-1,zoomRate = 0.1)
-            DrawMultiline(image,obcastle,color = (0),zoomRate = 0.1)
+            DrawPoints(image,point.x,point.y,(30),-1)
+            DrawMultiline(image,obcastle,color = (0))
 
             self.observationPolygon = visiblePolygon
-            self.image = image
-            self.observation = self.image.copy().reshape(pic_size,pic_size,1)
+            # self.observation = self.image.copy().reshape(pic_size,pic_size,1)
+            self.observation = image
         except Exception as e:
             print(e)
             self.image = np.zeros((pic_size, pic_size,1), dtype=np.uint8)
@@ -135,7 +133,7 @@ class GridWorldEnv(gym.Env):
                 if self.polygon.is_valid:
                     break
         self.polygon = self.polygon.simplify(0.05, preserve_topology=False)
-        self.o = shapely.Polygon([(0,0),(1000,0),(1000,1000),((0,1000))]).difference(self.polygon)
+        self.o = shapely.Polygon([(0,0),(pic_size,0),(pic_size,pic_size),((0,pic_size))]).difference(self.polygon)
 
         if (startPos):
             self.pos = startPos
@@ -151,7 +149,7 @@ class GridWorldEnv(gym.Env):
             print("getObservation failed")
         finally:
             self.path.append(copy.copy(self.pos))
-            self.unknownGridNum = countUnkown(self.image)
+            self.unknownGridNum = countUnkown(self.observation)
 
             return self.observation
     
@@ -176,7 +174,7 @@ class GridWorldEnv(gym.Env):
             Done = True
 
         #agent是否移动到地图外
-        elif abs(self.pos[1])>=boundary or abs(self.pos[0])>=boundary or (self.image[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point((self.pos[0]*10,self.pos[1]*10)))):
+        elif abs(self.pos[1])>=boundary or abs(self.pos[0])>=boundary or (self.observation[self.pos[1]][self.pos[0]] == 0) or (not self.polygon.contains(shapely.Point((self.pos[0],self.pos[1])))):
             self.pos -= direction
             reward = -1
             Done = False
@@ -192,12 +190,12 @@ class GridWorldEnv(gym.Env):
 
         #计算奖励
         if not Done:
-            tempGridCnt = countUnkown(self.image)
+            tempGridCnt = countUnkown(self.observation)
             exploreReward = max((self.unknownGridNum - tempGridCnt) * 0.0005,0)
-            exploreReward = min((self.unknownGridNum - tempGridCnt) * 0.0005,0.5)
+            exploreReward = min(exploreReward,0.5)
             self.unknownGridNum = tempGridCnt
             
-            if(self.observationPolygon.area/self.polygon.area > 0.95):
+            if(self.observationPolygon.area/self.polygon.area > 0.9):
                 Done = True
             else:
                 Done = False

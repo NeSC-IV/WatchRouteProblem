@@ -1,46 +1,44 @@
 import os
 import json
-import shapely
 import cv2
-from imitation.algorithms import bc
 from random import choice
-from wrpsolver.bc.gym_env_hwc import GridWorldEnv
-from stable_baselines3.common.evaluation import evaluate_policy
+from wrpsolver.bc.gym_env_hwc_100_pp_dict import GridWorldEnv
 from stable_baselines3 import PPO
-from stable_baselines3 import DQN
-# polygon = [[1, 0], [0, 1], [0, 41], [37, 41], [37, 26], [37, 26], [38, 26], [38, 26], [38, 42], [44, 42], [45, 42], [45, 43], [44, 43], [41, 43], [41, 43], [38, 43], [38, 44], [38, 45], [38, 49], [38, 49], [38, 54], [39, 54], [39, 59], [39, 59], [39, 63], [39, 64], [39, 68], [39, 68], [39, 70], [39, 70], [39, 70], [80, 70], [80, 64], [80, 64], [80, 59], [80, 59], [80, 55], [80, 55], [81, 55], [81, 55], [81, 57], [81, 57], [81, 61], [81, 61], [81, 64], [81, 64], [81, 68], [81, 68], [81, 70], [81, 70], [81, 71], [81, 71], [81, 71], [81, 75], [81, 76], [81, 81], [81, 81], [81, 87], [81, 87], [81, 89], [100, 89], [100, 89], [100, 90], [100, 90], [81, 90], [81, 102], [81, 102], [81, 125], [81, 125], [81, 136], [84, 136], [84, 136], [84, 137], [84, 137], [81, 137], [81, 137], [80, 137], [80, 137], [80, 137], [64, 137], [64, 137], [64, 136], [64, 136], [80, 136], [80, 125], [80, 125], [80, 102], [80, 102], [80, 90], [80, 90], [80, 87], [80, 87], [80, 81], [80, 81], [80, 76], [80, 75], [80, 71], [38, 71], [38, 136], [57, 136], [58, 136], [58, 137], [57, 137], [39, 137], [39, 198], [122, 198], [122, 137], [91, 137], [91, 137], [91, 136], [91, 136], [122, 136], [122, 90], [107, 90], [107, 90], [107, 89], [107, 89], [122, 89], [122, 87], [122, 87], [122, 83], [122, 83], [122, 79], [122, 79], [122, 75], [121, 74], [121, 70], [121, 70], [121, 66], [121, 66], [121, 62], [121, 62], [121, 57], [121, 57], [121, 53], [121, 53], [121, 49], [121, 49], [121, 44], [121, 44], [121, 43], [110, 43], [110, 43], [99, 43], [99, 43], [99, 42], [99, 42], [109, 42], [109, 42], [135, 42], [135, 1], [123, 1], [123, 1], [101, 1], [101, 0], [91, 0], [91, 42], [92, 42], [92, 42], [92, 43], [92, 43], [90, 43], [90, 43], [88, 43], [88, 43], [88, 42], [88, 42], [90, 42], [90, 0], [38, 0], [38, 15], [38, 15], [37, 15], [37, 15], [37, 0]]
-# polygon = shapely.Polygon(polygon)
-# startPoint = (37,23)
-polygon = [[40, 1], [40, 1], [40, 61], [84, 61], [84, 60], [84, 60], [85, 60], [85, 60], [86, 60], [86, 60], [86, 61], [86, 61], [86, 61], [86, 70], [86, 70], [84, 70], [84, 70], [84, 62], [38, 62], [38, 63], [1, 63], [1, 63], [1, 149], [55, 149], [55, 120], [55, 120], [55, 91], [55, 91], [55, 90], [56, 89], [57, 89], [57, 89], [84, 89], [84, 81], [84, 81], [86, 81], [86, 81], [86, 91], [86, 91], [86, 91], [86, 91], [85, 91], [85, 109], [85, 109], [85, 127], [85, 127], [85, 134], [87, 134], [87, 134], [87, 136], [87, 136], [85, 136], [85, 164], [85, 164], [85, 196], [165, 196], [165, 136], [98, 136], [98, 136], [98, 134], [98, 134], [165, 134], [165, 134], [165, 129], [166, 129], [166, 122], [166, 122], [166, 115], [166, 115], [166, 108], [166, 108], [166, 101], [166, 101], [166, 94], [166, 94], [166, 87], [166, 87], [166, 80], [167, 80], [167, 73], [167, 73], [167, 66], [167, 66], [167, 59], [167, 59], [167, 57], [125, 57], [125, 57], [125, 55], [125, 55], [169, 55], [169, 55], [199, 55], [199, 1], [115, 1], [115, 48], [115, 48], [114, 48], [114, 48], [114, 1], [86, 1], [86, 14], [86, 14], [86, 37], [86, 37], [86, 49], [86, 49], [84, 49], [84, 49], [84, 41], [84, 41], [84, 1]]
-polygon = shapely.Polygon(polygon)
-startPoint = (55, 65)
-# model = PPO.load('bc_policy_res18')
-model = PPO.load('ppo_res18_expo')
-# model = DQN.load('dqn_res18_expo1')
+from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv,VecFrameStack
+from stable_baselines3.common.monitor import Monitor
+if __name__ == "__main__":
+    dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data_picsize100_pos/"
+    picDirNames = os.listdir(dirPath)
+    testJsonDir = dirPath + choice(picDirNames) + '/data.json'
+    with open(testJsonDir) as json_file:
+        json_data = json.load(json_file)
 
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data/"
-picDirNames = os.listdir(dirPath)
-testJsonDir = dirPath + choice(picDirNames) + '/data.json'
-with open(testJsonDir) as json_file:
-    json_data = json.load(json_file)
-env = GridWorldEnv()
-rewardList = []
-for i in range(1):
-    observation = env.reset()
-    Done = False
-    state = None
-    action ,state= model.predict(observation,state,deterministic=False)
-    # action = int(action)
-    rewardSum = 0
-    cnt = 0
-    while not Done:
-        observation,reward,Done,_ = env.step(int(action))
-        cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp/'+str(cnt)+'.png',observation[0])
-        # cv2.imshow('aa',observation)
-        # cv2.waitKey(0)
-        action ,state = model.predict(observation,state,deterministic=False)
-        print(action,reward,cnt)
-        rewardSum += reward
-        cnt += 1
-    rewardList.append(rewardSum)
-print('reward: ',rewardList)
+    # def make_env(env_id, rank = 0, logFile = None,seed=0):
+    #     def _init():
+    #         env = GridWorldEnv(channel=False,render=True)
+    #         env = MaxAndSkipEnv(env,4)
+    #         return Monitor(env)
+    #     return _init
+    # env = SubprocVecEnv([make_env(0, i) for i in range(1)])
+    # env = VecFrameStack(env,2)
+    env = GridWorldEnv(channel=True,render=True)
+    model = PPO.load('pp_rew_gamma')
+    rewardList = []
+    for i in range(1):
+        observation,_ = env.reset()
+        Done = False
+        state = None
+        action ,state= model.predict(observation,state,deterministic=True)
+        rewardSum = 0
+        cnt = 0
+        while not Done:
+            action = int(action)
+            observation,reward,Done,_,_ = env.step(action)
+            # cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp/'+str(cnt)+'.png',env.globalObs)
+            action ,state = model.predict(observation,state,deterministic=True)
+            print(action,reward,cnt)
+            rewardSum += reward
+            cnt += 1
+        rewardList.append(rewardSum)
+    print('reward: ',rewardList)

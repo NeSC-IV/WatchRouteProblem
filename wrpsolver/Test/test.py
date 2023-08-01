@@ -40,10 +40,8 @@ def RunTest(seed = 1):
             coverageRate = float(arg)
 
     # 随机生成多边形
-    # polygon = random_polygons_generate.GetPolygon(edgeNum)
     pointList,filename = vis_maps.GetPolygon(seed)
-    polygon = shapely.Polygon(pointList).buffer(-8).simplify(0.5, preserve_topology=False)
-    # polygon = shapely.Polygon(pointList)
+    polygon = shapely.Polygon(pointList).buffer(-0.8).simplify(0.05, preserve_topology=True)
 
     polygonCoverList, sampleList,order, length, path = WatchmanRouteProblemSolver(
         polygon, coverageRate, iterationNum,800)
@@ -56,7 +54,7 @@ def RunTest(seed = 1):
 
     # 绘制生成的多边形
     image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
-    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=pic_size/zoomRate)
+    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
     cv2.imwrite('test/test1.png',image)
     n = 0
     m = 255
@@ -64,7 +62,7 @@ def RunTest(seed = 1):
 
     for p in polygonCoverList:
         p = p.simplify(0.05, preserve_topology=False)
-        image = DrawPolygon( list(p.exterior.coords), (o, n, m), image, zoomRate=pic_size/zoomRate)
+        image = DrawPolygon( list(p.exterior.coords), (o, n, m), image, zoomRate=1)
         n += 75
         if (n >= 255):
             m -= 75
@@ -75,7 +73,7 @@ def RunTest(seed = 1):
     # 绘制sample 和 访问顺序
     for sample in sampleList:
         for point in sample:
-            DrawPoints(image, point.x, point.y,zoomRate=(pic_size/zoomRate))
+            DrawPoints(image, point.x, point.y,zoomRate=(1))
             pass
     cv2.imwrite('test/test3.png',image)
 

@@ -8,13 +8,13 @@ def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
     yGap = vertex[1] - watcher[1]
     if (xGap == 0):
-        extendRate = MyRound(tolerance*zoomRate/abs(yGap), tolerance)
+        extendRate = MyRound(tolerance*pic_size/abs(yGap), tolerance)
         extendPoint = (watcher[0], watcher[1] + yGap*extendRate)
     elif (yGap == 0):
-        extendRate = MyRound(tolerance*zoomRate/abs(xGap), tolerance)
+        extendRate = MyRound(tolerance*pic_size/abs(xGap), tolerance)
         extendPoint = (watcher[0] + xGap*extendRate, watcher[1])
     else:
-        extendRate = max(zoomRate/abs(xGap), zoomRate/abs(yGap))
+        extendRate = max(pic_size/abs(xGap), pic_size/abs(yGap))
         extendRate = MyRound(extendRate, tolerance)
         extendPoint = (
             MyRound(watcher[0] + xGap*extendRate, tolerance), MyRound(watcher[1] + yGap*extendRate, tolerance))
@@ -81,7 +81,7 @@ def GetVisibilityPolygon(polygon, watcher):
             if lineString.covers(point):
                 result.append(point)
 
-    return shapely.Polygon(result).simplify(0.05, preserve_topology=False)
+    return shapely.Polygon(result)
 
 @func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):

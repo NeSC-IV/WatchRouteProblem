@@ -14,7 +14,7 @@ def GetPolygon(edgeNum: int):
         print("The number of edge must lager than 3 !")
         return None
     polygon = random_polygon(num_points=edgeNum)
-    polygon = ((point[0]*zoomRate, point[1]*zoomRate) for point in polygon)
+    polygon = ((point[0]*pic_size, point[1]*pic_size) for point in polygon)
     polygon = ((format(point[0], '.1f'), format(
         point[1], '.1f')) for point in polygon)
     polygon = Polygon(polygon)

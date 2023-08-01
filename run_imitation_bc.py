@@ -77,8 +77,8 @@ pool.join()
 policy_kwargs = dict(
     features_extractor_class=ResNet18,
 )
-# model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048,policy_kwargs=policy_kwargs)
-model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048)
+model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.999,batch_size=2048,policy_kwargs=policy_kwargs)
+# model = PPO("CnnPolicy", env, verbose=1,n_steps=512,gamma=0.99,batch_size=2048)
 model.set_parameters('bc_policy_res18.zip')
 transitions = flatten_trajectories(trajectories)
 trajectories = []

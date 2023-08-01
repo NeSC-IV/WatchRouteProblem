@@ -4,7 +4,7 @@ import numpy as np
 import math
 from ..Global import *
 
-meter2pixel = zoomRate
+meter2pixel = pic_size
 
 def GetPolygon(seed):
     json_path = os.path.dirname(os.path.abspath(__file__))+"/json/"

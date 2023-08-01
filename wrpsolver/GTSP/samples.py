@@ -55,8 +55,8 @@ def postProcessing(sampleList):
     for i in range(len(cityPos)):
         x = cityPos[i][0]
         y = cityPos[i][1]
-        x = np.round(x*pic_size/zoomRate).astype(np.int32)
-        y = np.round(y*pic_size/zoomRate).astype(np.int32)
+        x = np.round(x).astype(np.int32)
+        y = np.round(y).astype(np.int32)
         cityPos[i] = (x,y)
     return ((cityPos, cityGoods, cityClass))
 

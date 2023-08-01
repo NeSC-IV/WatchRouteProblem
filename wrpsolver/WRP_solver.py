@@ -4,11 +4,12 @@ import numpy as np
 from func_timeout import func_set_timeout
 from . import GTSP
 from . import MACS
-from .Global import step,pic_size,zoomRate
+from .Global import step,pic_size
 import time
 import logging
-@func_set_timeout(300)
-def WatchmanRouteProblemSolver(polygon,coverage,iteration = 32,d = zoomRate):
+# logging.basicConfig(level=logging.DEBUG)
+@func_set_timeout(60)
+def WatchmanRouteProblemSolver(polygon,coverage,iteration = 32,d = pic_size):
     gridMap = np.zeros((pic_size, pic_size, 1), dtype=np.uint8)
     polygon = polygon.simplify(0.0001, preserve_topology=False)
     time1 = time.time()
@@ -18,7 +19,7 @@ def WatchmanRouteProblemSolver(polygon,coverage,iteration = 32,d = zoomRate):
     freeSpace = polygon.buffer(-(step*1))
     freeSpace = MACS.SelectMaxPolygon(freeSpace)
     gridMap = Polygon2Gird(freeSpace,255,gridMap)
-    sampleList= GTSP.GetSample(convexSet,freeSpace,zoomRate/10)
+    sampleList= GTSP.GetSample(convexSet,freeSpace,pic_size/10)
     gtspCase = GTSP.postProcessing(sampleList)
     logging.debug(time.time() - time1)
     time1 = time.time()
@@ -31,8 +32,6 @@ def Polygon2Gird(polygon, color, gridMap):
     points = list(polygon.exterior.coords)
     # list -> ndarray
     points = np.array(points)
-    points *= pic_size
-    points /= zoomRate
     points = np.round(points).astype(np.int32)
 
     if type(points) is np.ndarray and points.ndim == 2:

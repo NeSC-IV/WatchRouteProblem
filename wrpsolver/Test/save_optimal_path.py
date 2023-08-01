@@ -4,7 +4,7 @@ import shapely
 import json
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
-from ..Global import zoomRate
+from ..Global import pic_size
 import numpy as np
 import logging
 import os

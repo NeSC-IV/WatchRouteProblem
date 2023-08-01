@@ -22,11 +22,10 @@ def DrawPoints(image, x, y, color=(153, 92, 0),size = -1,zoomRate = 1):
     cv2.circle(image, (x, y), 1, color, size)
     return image
 
-def DrawSinglePoint(image, x, y, color=30,zoomRate=1):
+def DrawSinglePoint(image, x, y, color=30,size = -1,zoomRate=1):
     x = np.round(x*zoomRate).astype(np.int32)
     y = np.round(y*zoomRate).astype(np.int32)
-    # cv2.circle(image, (x, y), 1, color, 1)
-    image[y][x] = color
+    image[y-1:y+2,x-1:x+2] = color
     return image
 
 def DrawGridNum(image, x, y, num,zoomRate = 1):
@@ -70,10 +69,10 @@ def DrawMultiline(image, multiLine,color = (0, 25, 255),zoomRate = 1):
             drawSingleline(image,line,color,zoomRate=zoomRate)
     elif(type(multiLine) == shapely.GeometryCollection):
         for geometry in multiLine.geoms:
-            DrawMultiline(image,geometry,zoomRate=zoomRate)
+            DrawMultiline(image,geometry,color=color,zoomRate=zoomRate)
     elif(type(multiLine) == shapely.MultiPolygon):
         for geometry in multiLine.geoms:
-            DrawMultiline(image,geometry,zoomRate=zoomRate)
+            DrawMultiline(image,geometry,color=color,zoomRate=zoomRate)
     else:
         print(type(multiLine))
         print("unknown type")

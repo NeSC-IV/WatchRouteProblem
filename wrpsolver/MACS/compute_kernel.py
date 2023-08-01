@@ -35,15 +35,15 @@ def GetRayLine(watcher, vertex):
     yGap = vertex[1] - watcher[1]
     # todo 注意多边形的边界
     if (xGap == 0):
-        extendRate = MyRound(2*zoomRate/abs(yGap), tolerance)
+        extendRate = MyRound(2*pic_size/abs(yGap), tolerance)
         extendPoint1 = (watcher[0], watcher[1] + yGap*extendRate)
         extendPoint2 = (watcher[0], watcher[1] - yGap*extendRate)
     elif (yGap == 0):
-        extendRate = MyRound(tolerance*zoomRate/abs(xGap), tolerance)
+        extendRate = MyRound(tolerance*pic_size/abs(xGap), tolerance)
         extendPoint1 = (watcher[0] + xGap*extendRate, watcher[1])
         extendPoint2 = (watcher[0] - xGap*extendRate, watcher[1])
     else:
-        extendRate = max(zoomRate/abs(xGap), zoomRate/abs(yGap))
+        extendRate = max(pic_size/abs(xGap), pic_size/abs(yGap))
         extendRate = MyRound(extendRate, tolerance)
         extendPoint1 = (
             MyRound(watcher[0] + xGap*extendRate, tolerance), MyRound(watcher[1] + yGap*extendRate, tolerance))
