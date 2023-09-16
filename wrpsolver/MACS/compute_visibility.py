@@ -4,21 +4,14 @@ import math
 import time
 from func_timeout import func_set_timeout
 from ..Global import *
+import visibility
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
     yGap = vertex[1] - watcher[1]
-    if (xGap == 0):
-        extendRate = MyRound(tolerance*pic_size/abs(yGap), tolerance)
-        extendPoint = (watcher[0], watcher[1] + yGap*extendRate)
-    elif (yGap == 0):
-        extendRate = MyRound(tolerance*pic_size/abs(xGap), tolerance)
-        extendPoint = (watcher[0] + xGap*extendRate, watcher[1])
-    else:
-        extendRate = max(pic_size/abs(xGap), pic_size/abs(yGap))
-        extendRate = MyRound(extendRate, tolerance)
-        extendPoint = (
-            MyRound(watcher[0] + xGap*extendRate, tolerance), MyRound(watcher[1] + yGap*extendRate, tolerance))
-    return shapely.LineString([watcher, extendPoint])
+    rate =  (pic_size/(math.hypot(xGap, yGap)))*100000
+    extendPoint1 = (watcher[0] + xGap*rate,watcher[1] + yGap*rate)
+    extendPoint2 = (watcher[0] - xGap*rate,watcher[1] - yGap*rate)
+    return shapely.LineString([extendPoint1, extendPoint2])
 
 
 def judgeVisible(polygon, watcher, vertex, shortenRate=0.001):
@@ -85,7 +78,7 @@ def GetVisibilityPolygon(polygon, watcher):
 
 @func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):
-    import visibility
+    # print(list(polygon.exterior.coords),wacther)
     polygon = polygon.simplify(0.05, preserve_topology=False)
     if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
         for p in polygon.geoms:
@@ -99,4 +92,4 @@ def GetVisibilityPolygonCPP(polygon,wacther):
         return None
     pointList.pop()
     result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y))
-    return shapely.Polygon(result)
+    return shapely.Polygon(result).simplify(0.05,False)

@@ -17,12 +17,13 @@ STEP = 1
 PIC_SIZE = 100
 PIC_DIR_NAMES = None
 MAXSTEP = 400
+RANGE = 32
+LOCAL_SHAPE = (RANGE*2+1)*2
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/pic_data_picsize100_new/"
 IMAGE = np.zeros((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
 class GridWorldEnv(gym.Env):
 
-    def __init__(self, polygon=None, startPos=None, seed = None, channel = False, render = False):
-        self.channel = channel
+    def __init__(self, polygon=None, startPos=None, seed = None, render = False):
         self.render = render
         self.render_mode = None
         self.polygon = polygon
@@ -33,65 +34,54 @@ class GridWorldEnv(gym.Env):
         self.path = []
         self.stepCnt = 0
         self.goal = None
-        # self.observation_space = spaces.Box(0, PIC_SIZE, shape=(6,), dtype=int)
 
-
-        if self.channel:
-            self.observation_space = spaces.Dict(
+        self.observation_space = spaces.Dict(
             {
                 "agent": spaces.Box(0, PIC_SIZE, shape=(6,), dtype=int),
-                "localImage":spaces.Box(0, 255, shape=(6,6), dtype=np.uint8),
-                "image":spaces.Box(0, 255, shape=(100,100,1), dtype=np.uint8),
+                "localImage":spaces.Box(0, 255, shape=(3,3), dtype=np.uint8),
+                "localImage1":spaces.Box(0, 255, shape=(LOCAL_SHAPE,LOCAL_SHAPE,1), dtype=np.uint8),
             }
         )
-        else:
-            self.observation_space = spaces.Dict(
-                {
-                    "image":spaces.Box(0, 255, shape=(100,100,1), dtype=np.uint8),
-                }
-            )
 
-        self.action_space = spaces.Discrete(8)
+
+        self.action_space = spaces.Discrete(4)
 
         self._action_to_direction = {
             0: np.array([STEP, 0]),
             1: np.array([-STEP, 0]),
             2: np.array([0, STEP]),
             3: np.array([0, -STEP]),
-            4: np.array([STEP, STEP]),
-            5: np.array([-STEP, -STEP]),
-            6: np.array([-STEP, STEP]),
-            7: np.array([STEP, -STEP]),
+            # 4: np.array([STEP, STEP]),
+            # 5: np.array([-STEP, -STEP]),
+            # 6: np.array([-STEP, STEP]),
+            # 7: np.array([STEP, -STEP]),
         }
 
     def _getObservation(self,pos):
-        image = IMAGE.copy()
-        point = shapely.Point((pos[0],pos[1]))
+        image = self.image.copy()
 
         try:
-            if self.channel:
-                if not self.polygon.covers(point):
-                    print("polygon not contains point")
-                    return False
-                
-                DrawMultiline(image,self.polygon, color=(255))
+            if self.MoveOutOfRange(image):
+                return False
             for p in self.path:
                 x = p[0]
                 y = p[1]
                 image[y][x] = 80
-            DrawPoints(image,point.x,point.y,(30),2)
-            DrawPoints(image,self.goal[0],self.goal[1],(150),2)
-            self.image = image
             localImage = GetLocalImage(image,pos[0],pos[1])
-            v = self.path[-1] + self.pos + self.goal
-            if self.channel:
-                self.observation = {"agent":np.array(v),"localImage":localImage,"image":image}
-            else:
-                self.observation = {"image":image}
-            # self.observation = v
+            DrawSinglePoint(image,self.goal[0],self.goal[1],(150),2)
+            localImage1 = GetLocalImage(image,pos[0],pos[1],_range = RANGE)
+            localImage1 = cv2.resize(localImage1,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
+            DrawSinglePoint(image,self.pos[0],self.pos[1],(30),2)
+            agent = []
+            for p in self.path[-1:]:
+                agent += p 
+            agent = agent + self.pos + self.goal
+            self.observation = {"agent":np.array(agent),"localImage":localImage,"localImage1":localImage1.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1)}
+
             if self.render:
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp/'+str(self.stepCnt)+'.png',image)
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp1/'+str(self.stepCnt)+'.png',localImage)
+                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/'+str(self.stepCnt)+'.png',image)
+                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/'+str(self.stepCnt)+'.png',localImage1)
+                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/'+str(self.stepCnt)+'.png',localImage)
         except Exception as e:
             print(e)
             return False
@@ -103,15 +93,16 @@ class GridWorldEnv(gym.Env):
     
     def reset(self, seed=None):
         self.observation = self.observation_space.sample()
-        self.image = IMAGE
-        self.path = [[0,0]]
+        self.path = [[0,0] for _ in range(1)]
         self.stepCnt = 0
 
         if not self.polygonInited:
             self.polygon = RandomGetPolygon().simplify(0.05, preserve_topology=False)
         if not self.startPosInited:
             self.pos = GetStartPoint(self.polygon)
+        self.image = IMAGE.copy()
 
+        DrawMultiline(self.image,self.polygon, color=(255))
         self.goal = GetStartPoint(self.polygon)
 
 
@@ -124,10 +115,10 @@ class GridWorldEnv(gym.Env):
     def step(self,action):
 
         #定义变量
-        timePunishment = -0.01
+        timePunishment = 0
         reward = 0
         info = self._get_info()
-        gamma = 1
+        gamma = 2
         Done = True
         distance = math.hypot((self.pos[0]-self.goal[0]), (self.pos[1]-self.goal[1]))
         #更新位置
@@ -138,44 +129,34 @@ class GridWorldEnv(gym.Env):
         #agent步数是否到达上限
         if self.stepCnt >= MAXSTEP:
             pass
-        #agent是否移动到地图外
-        elif self.MoveOutOfRange():
-            self.pos = (self.pos-direction).tolist()
-            reward -= 2
 
-
-        #更新观测失败
         elif not self._getObservation(self.pos):
-            reward = -2
+            reward -= 1
 
         else:
             Done = False
 
         #计算奖励
         if not Done:
+            repeatPunishment = - 0.01 if (self.pos in self.path) else 0.001
             distanceReward = (self.distance - distance) * 0.005
-            if distance < 2:
-                reward += 5
+            if distance < 4:
+                reward += 1
                 Done = True
-
-            reward += float(distanceReward+timePunishment)
+            reward += float(distanceReward+timePunishment+repeatPunishment)
             self.distance = distance
         #更新路径
         self.path.append(copy.copy(self.pos))
         return self.observation, reward*gamma, Done ,False,info
     
-    def MoveOutOfRange(self):
+    def MoveOutOfRange(self,image):
         x = self.pos[0]
         y = self.pos[1]
-        p = shapely.Point(x,y)
         #out of boundary
         if (x >= PIC_SIZE) or (y >= PIC_SIZE) or (x <= 0) or (y <= 0):
             return True
-        if self.channel:
-        # return False
-        # obscatle
-            if (self.image[y][x] == 0) or (not self.polygon.contains(p)):
-                return True
+        if (image[y][x] == 0):
+            return True
         return False
 
 def RandomGetPolygon():
@@ -198,27 +179,31 @@ def GetStartPoint(polygon):
                           random.uniform(miny, maxy))
         if temppolygon.covers(p):
             return [int(p.x),int(p.y)]
-
-
-def CountUnkown(image):
-    ret,thresh=cv2.threshold(image,254,255,cv2.THRESH_BINARY_INV)
-    cnt = cv2.countNonZero(thresh)
-    return cnt
     
-def GetLocalImage(image,x,y,_range=3):
+def GetLocalImage(image,x,y,_range=1):
     _range = _range
-    paddleSize = 40
+    paddleSize = 80
     x = x + paddleSize
     y = y + paddleSize
     y_low = max((y-_range),0)
     y_high = min((y+_range),PIC_SIZE+paddleSize*2)
     x_low = max((x-_range),0)
     x_high = min((x+_range),PIC_SIZE+paddleSize*2)
-
     newImage = cv2.copyMakeBorder(image,paddleSize,paddleSize,paddleSize,paddleSize,cv2.BORDER_CONSTANT,value=0)
-    ret,newImage=cv2.threshold(newImage,31,255,cv2.THRESH_TRUNC)
-    DrawPoints(newImage,x,y,(255),-1)
-    newImage = newImage[y_low:y_high,[row for row in range(x_low,x_high)]]
-    # print(newImage.shape)
+    # ret,newImage=cv2.threshold(newImage,81,255,2)
+    # DrawPoints(newImage,x,y,(255),-1)
+    newImage = newImage[y_low:y_high+1,[row for row in range(x_low,x_high+1)]]
     # newImage = cv2.resize(newImage,(paddleSize,paddleSize),interpolation = cv2.INTER_NEAREST)
     return newImage
+
+def getDirection(P1, P2, img):
+    x1 = P1[0]
+    y1 = P1[1]
+    x2 = P2[0]
+    y2 = P2[1]
+    image = IMAGE.copy()
+    cv2.line(image,(x1,y1),(x2,y2),255,1)
+    coords = np.argwhere(image)
+    for pos in coords:
+        if(img[pos[0]][pos[1]] == 255):
+            img[pos[0]][pos[1]] = 200

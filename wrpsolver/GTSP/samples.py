@@ -5,7 +5,7 @@ from ..Global import *
 
 def getLineList(lines):
     lineList = []
-    if (type(lines) == shapely.LineString):
+    if (type(lines) == shapely.LineString or type(lines) == shapely.LinearRing):
         lineList.append(lines)
     elif (type(lines) == shapely.MultiLineString):
         for line in lines.geoms:
@@ -18,8 +18,8 @@ def GetSample(polygonList, freeSpace, dSample):
     for polygon in polygonList:
         pointList = []
         lineString = polygon.boundary
-        lineList = getLineList(lineString.difference(
-            freeSpace.boundary.buffer(step/2)))
+        # lineList = getLineList(lineString.difference(freeSpace.boundary.buffer(step)))
+        lineList = getLineList(lineString.difference(freeSpace.boundary))
         for line in lineList:
             path = 0
             while (path < line.length):
@@ -34,7 +34,8 @@ def GetSample(polygonList, freeSpace, dSample):
             if freeSpace.covers(start):
                 pointList.append(start)
         pointList = list(dict.fromkeys(pointList))  # 去重
-        sampleList.append(pointList)
+        if (len(pointList) > 0):
+            sampleList.append(pointList)
     return sampleList
 
 

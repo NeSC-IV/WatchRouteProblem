@@ -10,3 +10,6 @@ data*
 best_model
 *.log
 test
+saved_model
+results
+render_saved

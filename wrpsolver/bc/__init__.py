@@ -1,9 +1,9 @@
-# from gym.envs.registration import register
-# from .gym_env_hwc_100_pos import GridWorldEnv
+# from gymnasium.envs.registration import register
+# from .gym_env_hwc_100_pp_dict import GridWorldEnv
 # from .gym_env_hwc_100 import GridWorldEnv as GridWorldEnv_100
 # register(
 #     id='IL/GridWorld-v1',
-#     entry_point='wrpsolver.bc:GridWorldEnv_100',
+#     entry_point='wrpsolver.bc:GridWorldEnv',
 #     max_episode_steps=400,
 # )
 # register(

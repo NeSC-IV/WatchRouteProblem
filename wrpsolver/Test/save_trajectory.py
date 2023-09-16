@@ -42,7 +42,7 @@ def GetSingleTrajectory(pathID):
             pass
         else:
             os.mkdir(savePath + pathID )
-        d = 800
+        d = 32
         step = 1
         image = IMAGE.copy()
         with open(dirPath + pathID+'.json') as jsonFile:

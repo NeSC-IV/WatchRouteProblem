@@ -1,44 +1,69 @@
 import os
 import json
 import cv2
-from random import choice
-from wrpsolver.bc.gym_env_hwc_100_pp_dict import GridWorldEnv
+import glob
+import shutil
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from PIL import Image
+from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
 from stable_baselines3 import PPO
-from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
-from stable_baselines3.common.vec_env import SubprocVecEnv,VecFrameStack
-from stable_baselines3.common.monitor import Monitor
 if __name__ == "__main__":
-    dirPath = os.path.dirname(os.path.abspath(__file__))+"/wrpsolver/Test/pic_data_picsize100_pos/"
-    picDirNames = os.listdir(dirPath)
-    testJsonDir = dirPath + choice(picDirNames) + '/data.json'
-    with open(testJsonDir) as json_file:
-        json_data = json.load(json_file)
 
-    # def make_env(env_id, rank = 0, logFile = None,seed=0):
-    #     def _init():
-    #         env = GridWorldEnv(channel=False,render=True)
-    #         env = MaxAndSkipEnv(env,4)
-    #         return Monitor(env)
-    #     return _init
-    # env = SubprocVecEnv([make_env(0, i) for i in range(1)])
-    # env = VecFrameStack(env,2)
-    env = GridWorldEnv(channel=True,render=True)
-    model = PPO.load('pp_rew_gamma')
+
+    env = GridWorldEnv(render=True)
+    model = PPO.load('saved_model/ppod_sm')
     rewardList = []
-    for i in range(1):
+    while True:
+        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
+        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
+        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
+        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
+        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
+        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
+
         observation,_ = env.reset()
         Done = False
         state = None
         action ,state= model.predict(observation,state,deterministic=True)
         rewardSum = 0
-        cnt = 0
+        cnt = 1
         while not Done:
             action = int(action)
             observation,reward,Done,_,_ = env.step(action)
-            # cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/tmp/'+str(cnt)+'.png',env.globalObs)
             action ,state = model.predict(observation,state,deterministic=True)
             print(action,reward,cnt)
             rewardSum += reward
             cnt += 1
+
+        # fig, ax = plt.subplots()
+        # ims = []
+        # for pic in range(cnt):
+        #     im = ax.imshow(plt.imread("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/" + str(pic)+".png"), animated = True)
+        #     ims.append([im])
+        # ani = animation.ArtistAnimation(fig, ims, interval=60)
+        # ani.save('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result.gif')
+
+        frames = []
+        for pic in range(cnt):
+            im = Image.open("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/" + str(pic)+".png")
+            frames.append(im)
+        frame_one = frames[0]
+        frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result.gif", format="GIF", append_images=frames,
+               save_all=True, duration=60, loop=0)
+        
+        frames = []
+        for pic in range(cnt):
+            im = Image.open("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/" + str(pic)+".png")
+            frames.append(im)
+        frame_one = frames[0]
+        frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result1.gif", format="GIF", append_images=frames,
+               save_all=True, duration=60, loop=0)
+
+        print("gif saved!")
         rewardList.append(rewardSum)
+        cmd = input()
+        if cmd == 'q':
+            break
+
     print('reward: ',rewardList)

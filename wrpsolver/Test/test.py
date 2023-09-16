@@ -41,10 +41,10 @@ def RunTest(seed = 1):
 
     # 随机生成多边形
     pointList,filename = vis_maps.GetPolygon(seed)
-    polygon = shapely.Polygon(pointList).buffer(-0.8).simplify(0.05, preserve_topology=True)
+    polygon = shapely.Polygon(pointList).buffer(-0.8, cap_style=1, join_style=2).simplify(0.05, preserve_topology=False)
 
-    polygonCoverList, sampleList,order, length, path = WatchmanRouteProblemSolver(
-        polygon, coverageRate, iterationNum,800)
+    polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
+        polygon, coverageRate, 32, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0
@@ -60,15 +60,18 @@ def RunTest(seed = 1):
     m = 255
     o = 255
 
+    cnt = 0
     for p in polygonCoverList:
+        image = image.copy()
         p = p.simplify(0.05, preserve_topology=False)
-        image = DrawPolygon( list(p.exterior.coords), (o, n, m), image, zoomRate=1)
+        DrawPolygon( list(p.exterior.coords), (o, n, m), image, zoomRate=1)
         n += 75
         if (n >= 255):
             m -= 75
         if (m <= 0):
             o -= 55
-    cv2.imwrite('test/test2.png',image)
+        cv2.imwrite('test/test2_'+ str(cnt) +'.png',image)
+        cnt += 1
 
     # 绘制sample 和 访问顺序
     for sample in sampleList:

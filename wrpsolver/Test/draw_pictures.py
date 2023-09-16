@@ -35,13 +35,17 @@ def DrawGridNum(image, x, y, num,zoomRate = 1):
     s_num = str(num)
     cv2.putText(image, s_num, (x, y), cv2.FONT_HERSHEY_SIMPLEX,
                 1, (0, 0, 0), 1)
-
 def DrawLine(image, pt1, pt2,color = (0, 25, 255),zoomRate = 1):
 
-    x1 = np.round(pt1[0] * zoomRate).astype(np.int32)
-    y1 = np.round(pt1[1] * zoomRate).astype(np.int32)
-    x2 = np.round(pt2[0] * zoomRate).astype(np.int32)
-    y2 = np.round(pt2[1] * zoomRate).astype(np.int32)
+
+    x1 = int(pt1[0])
+    y1 = int(pt1[1])
+    x2 = int(pt2[0])
+    y2 = int(pt2[1])
+    # x1 = np.round(pt1[0] * zoomRate).astype(np.int32)
+    # y1 = np.round(pt1[1] * zoomRate).astype(np.int32)
+    # x2 = np.round(pt2[0] * zoomRate).astype(np.int32)
+    # y2 = np.round(pt2[1] * zoomRate).astype(np.int32)
     cv2.line(image, (x1, y1), (x2, y2), color, 1)
 
 def DrawPath(image, path):
@@ -49,7 +53,6 @@ def DrawPath(image, path):
     while i < len(path)-1:
         DrawLine(image, path[i], path[i+1])
         i += 1
-
 def DrawMultiline(image, multiLine,color = (0, 25, 255),zoomRate = 1):
     
     def drawSingleline(image,line,color = (0, 25, 255),zoomRate = 1):

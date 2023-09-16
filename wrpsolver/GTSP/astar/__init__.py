@@ -84,7 +84,6 @@ class AStar(ABC, Generic[T]):
             return _gen()
         else:
             return reversed(list(_gen()))
-
     def astar(
         self, start: T, goal: T, reversePath: bool = False
     ) -> Union[Iterable[T], None]:

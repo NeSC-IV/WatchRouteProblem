@@ -52,7 +52,6 @@ def cal_cost(distance, solution, goods_num):
     # cost += distance[solution[0]][solution[goods_num - 1]]
     return cost
 
-
 def GetTrace(tspCase, grid):
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
@@ -61,7 +60,7 @@ def GetTrace(tspCase, grid):
     goods_num = len(set(goods_class))         # 商品种类数目
     path, distance = record_distance(city_position, grid)  # 得到距离矩阵
 
-    iter_num = 5000       # 迭代次数
+    iter_num = 1000       # 迭代次数
     tabu_list = []        # 禁忌表
     tabu_time = []        # 禁忌时间表
     current_tabu_num = 0  # 当前禁忌对象数量
@@ -91,6 +90,7 @@ def GetTrace(tspCase, grid):
         candidate = []
         candidate_value = []
         temp = 0
+        stepCnt = 0
         # 随机选取邻域
         while True:
             # 从邻域选择新解 - 同一类城市交换 + 现有的两交换
@@ -117,7 +117,7 @@ def GetTrace(tspCase, grid):
             if len(candidate) == temp:
                 continue
             # 若不在禁忌表中则放入候选集
-            if candidate[temp] not in tabu_list:
+            if (candidate[temp] not in tabu_list) or stepCnt>10000:
                 candidate_value.append(
                     cal_cost(distance, candidate[temp], goods_num))
                 temp += 1
@@ -125,6 +125,7 @@ def GetTrace(tspCase, grid):
                 candidate.pop()
             if temp >= candidate_num:
                 break
+            stepCnt += 1
 
         # 得到候选解中的最优解
         candidate_best = min(candidate_value)

@@ -26,9 +26,10 @@ class AStarSolver(AStar):
 
     def distance_between(self, n1, n2):
         """this method always returns 1, as two 'neighbors' are always adajcent"""
-        (x1, y1) = n1
-        (x2, y2) = n2
-        return math.hypot(x2 - x1, y2 - y1)
+        # (x1, y1) = n1
+        # (x2, y2) = n2
+        # return math.hypot(x2 - x1, y2 - y1)
+        return 1
 
     def neighbors(self, node):
         """ for a given coordinate in the maze, returns up to 4 adjacent(north,east,south,west)
@@ -40,8 +41,8 @@ class AStarSolver(AStar):
         neighborList = [
                         (x+step, y), (x-step, y),
                         (x, y+step), (x, y-step),
-                        (x-step,y-step),(x+step,y+step),
-                        (x+step,y-step),(x-step,y+step),
+                        # (x-step,y-step),(x+step,y+step),
+                        # (x+step,y-step),(x-step,y+step),
                         ]
         return [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
 

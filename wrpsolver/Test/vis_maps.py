@@ -12,7 +12,7 @@ def GetPolygon(seed):
     map_ids = np.loadtxt(map_file, str)
 
     file_name = map_ids[seed]
-    print(file_name)
+    # print(file_name)
     with open(json_path + '/' + file_name + '.json') as json_file:
         json_data = json.load(json_file)
 
