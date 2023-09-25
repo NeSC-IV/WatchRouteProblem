@@ -9,7 +9,7 @@ from .Test.draw_pictures import DrawPolygon,DrawMultiline
 import time
 import logging
 import math
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 @func_set_timeout(600)
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     convexSet = []

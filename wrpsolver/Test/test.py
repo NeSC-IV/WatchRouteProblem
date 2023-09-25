@@ -44,8 +44,9 @@ def RunTest(seed = 1):
             coverageRate = float(arg)
 
     # 随机生成多边形
-    shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/test/")
-    os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/test/")
+    path = os.path.dirname(os.path.realpath(__file__))+'/../../test'
+    shutil.rmtree(path)
+    os.mkdir(path)
     pointList,_,_ = vis_maps.GetPolygon(seed)
     polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
     minx, miny, maxx, maxy = polygon.bounds
@@ -54,8 +55,8 @@ def RunTest(seed = 1):
     image = np.zeros((int(maxy), int(maxx), 3), dtype=np.uint8)
     DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
     cv2.imwrite('test/test.png',image)
-    image = cv2.resize(image,(100,100),interpolation = cv2.INTER_NEAREST)
-    cv2.imwrite('test/test0.png',image)
+    image1 = cv2.resize(image,(100,100),interpolation = cv2.INTER_NEAREST)
+    cv2.imwrite('test/test0.png',image1)
 
     polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
         polygon, coverageRate, d, iterationNum)
