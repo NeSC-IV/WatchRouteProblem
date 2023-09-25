@@ -11,10 +11,13 @@ class AStarSolver(AStar):
     def __init__(self,grid):
         self.grid = grid
         self.step = 1
+        self.y_len = self.grid.shape[0]
+        self.x_len = self.grid.shape[1]
     def isReachable(self, point):
-
         grid = self.grid
         (x,y) = point
+        if(x<0 or y <0 or x>=self.x_len or y>=self.y_len):
+            return False
         return grid[y][x] != 0 #这里没写错
 
 
@@ -38,13 +41,20 @@ class AStarSolver(AStar):
 
         x, y = node
         step = self.step
+        miniStep = 1
         neighborList = [
                         (x+step, y), (x-step, y),
                         (x, y+step), (x, y-step),
-                        # (x-step,y-step),(x+step,y+step),
-                        # (x+step,y-step),(x-step,y+step),
+                        (x-step,y-step),(x+step,y+step),
+                        (x+step,y-step),(x-step,y+step),
+
+                        # (x+miniStep, y), (x-miniStep, y),
+                        # (x, y+miniStep), (x, y-miniStep),
+                        # (x-miniStep,y-miniStep),(x+miniStep,y+miniStep),
+                        # (x+miniStep,y-miniStep),(x-miniStep,y+miniStep),
                         ]
-        return [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
+        nbs = [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
+        return nbs
 
     def is_goal_reached(self, current, goal) -> bool:
         return current == goal

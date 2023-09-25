@@ -1,7 +1,7 @@
 import shapely
 import numpy as np
 from ..Global import *
-
+from ..Test.draw_pictures import DrawMultiline,DrawPolygon
 
 def getLineList(lines):
     lineList = []
@@ -13,29 +13,46 @@ def getLineList(lines):
     return lineList
 
 
-def GetSample(polygonList, freeSpace, dSample):
+def GetSample(polygonList, polygon, dSample):
+
+    import math
+    minx, miny, maxx, maxy = polygon.bounds
+    maxx = math.ceil(maxx/10)*10
+    maxy = math.ceil(maxy/10)*10
+    image = np.zeros((int(maxy), int(maxx), 3), dtype=np.uint8)
+    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
+
     sampleList = []
+    freeSpace = polygon.buffer(-1, join_style=2)
+    obstacle = polygon.boundary.buffer(1,join_style=2)
     for polygon in polygonList:
         pointList = []
         lineString = polygon.boundary
         # lineList = getLineList(lineString.difference(freeSpace.boundary.buffer(step)))
-        lineList = getLineList(lineString.difference(freeSpace.boundary))
+        lineList = getLineList(lineString.difference(obstacle))
         for line in lineList:
-            path = 0
+            DrawMultiline(image,line, color=(200,200,200))
+            if line.length < 2:
+                continue
+            path = dSample
             while (path < line.length):
                 point = shapely.line_interpolate_point(line, path)
-                if freeSpace.covers(point):
+                if freeSpace.contains(point):
                     pointList.append(point)
                 path += dSample
-            end = shapely.get_point(line, -1)
-            if freeSpace.covers(end):
-                pointList.append(end)
-            start = shapely.get_point(line, 0)
-            if freeSpace.covers(start):
+            # end = shapely.line_interpolate_point(line, -1)
+            # if freeSpace.contains(end):
+            #     pointList.append(end)
+            start = shapely.line_interpolate_point(line, 1)
+            if freeSpace.contains(start):
                 pointList.append(start)
         pointList = list(dict.fromkeys(pointList))  # 去重
         if (len(pointList) > 0):
             sampleList.append(pointList)
+
+
+        import cv2
+        cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/test.png',image)
     return sampleList
 
 

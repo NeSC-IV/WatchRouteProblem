@@ -183,6 +183,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: spaces.Dict,
+        # cnn_output_dim: int = 45,#114
         cnn_output_dim: int = 95,#114
         normalized_image: bool = False,
     ) -> None:

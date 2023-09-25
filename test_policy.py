@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
 
     env = GridWorldEnv(render=True)
-    model = PPO.load('saved_model/ppod_sm')
+    model = PPO.load('saved_model/ppo_var')
     rewardList = []
     while True:
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")

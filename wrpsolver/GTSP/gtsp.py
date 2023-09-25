@@ -56,6 +56,8 @@ def GetTrace(tspCase, grid):
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
     city_position, goods_class, city_class = tspCase
+    print(len(city_position), len(goods_class), len(city_class))
+    exit()
     city_num = len(city_position)             # 城市数目
     goods_num = len(set(goods_class))         # 商品种类数目
     path, distance = record_distance(city_position, grid)  # 得到距离矩阵

@@ -4,6 +4,9 @@ import getopt
 import sys
 import cv2
 import shapely
+import math
+import shutil
+import os
 from . import random_polygons_generate
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
@@ -12,7 +15,8 @@ from .draw_pictures import *
 
 def RunTest(seed = 1):
     iterationNum = 32
-    coverageRate = 0.95
+    d = 20
+    coverageRate = 0.97
 
     # 读取命令行参数
     try:
@@ -40,11 +44,21 @@ def RunTest(seed = 1):
             coverageRate = float(arg)
 
     # 随机生成多边形
-    pointList,filename = vis_maps.GetPolygon(seed)
-    polygon = shapely.Polygon(pointList).buffer(-0.8, cap_style=1, join_style=2).simplify(0.05, preserve_topology=False)
+    shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/test/")
+    os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/test/")
+    pointList,_,_ = vis_maps.GetPolygon(seed)
+    polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
+    minx, miny, maxx, maxy = polygon.bounds
+    maxx = math.ceil(maxx/10)*10
+    maxy = math.ceil(maxy/10)*10
+    image = np.zeros((int(maxy), int(maxx), 3), dtype=np.uint8)
+    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
+    cv2.imwrite('test/test.png',image)
+    image = cv2.resize(image,(100,100),interpolation = cv2.INTER_NEAREST)
+    cv2.imwrite('test/test0.png',image)
 
     polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
-        polygon, coverageRate, 32, iterationNum)
+        polygon, coverageRate, d, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0
@@ -53,23 +67,18 @@ def RunTest(seed = 1):
     print(length)
 
     # 绘制生成的多边形
-    image = np.zeros((pic_size, pic_size, 3), dtype=np.uint8)
     DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
     cv2.imwrite('test/test1.png',image)
-    n = 0
-    m = 255
-    o = 255
-
+    colorList = []
+    for n in range(192,-1,-64):
+        for m in range(256,-1,-64):
+            for o in range(256,-1,-64):
+                colorList.append((o,m,n))
     cnt = 0
     for p in polygonCoverList:
         image = image.copy()
         p = p.simplify(0.05, preserve_topology=False)
-        DrawPolygon( list(p.exterior.coords), (o, n, m), image, zoomRate=1)
-        n += 75
-        if (n >= 255):
-            m -= 75
-        if (m <= 0):
-            o -= 55
+        DrawPolygon( list(p.exterior.coords), colorList[cnt], image, zoomRate=1)
         cv2.imwrite('test/test2_'+ str(cnt) +'.png',image)
         cnt += 1
 

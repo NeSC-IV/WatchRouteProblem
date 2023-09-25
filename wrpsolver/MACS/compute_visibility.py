@@ -4,7 +4,7 @@ import math
 import time
 from func_timeout import func_set_timeout
 from ..Global import *
-import visibility
+from . import visibility
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
     yGap = vertex[1] - watcher[1]
@@ -79,7 +79,7 @@ def GetVisibilityPolygon(polygon, watcher):
 @func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):
     # print(list(polygon.exterior.coords),wacther)
-    polygon = polygon.simplify(0.05, preserve_topology=False)
+    polygon = polygon.simplify(0.5, preserve_topology=False)
     if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
         for p in polygon.geoms:
             if(p.contains(wacther)):
@@ -92,4 +92,4 @@ def GetVisibilityPolygonCPP(polygon,wacther):
         return None
     pointList.pop()
     result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y))
-    return shapely.Polygon(result).simplify(0.05,False)
+    return shapely.Polygon(result).simplify(0.5,False)

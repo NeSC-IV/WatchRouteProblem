@@ -9,10 +9,11 @@ pointList = [[82.8, 0.8], [82.8, 1.8], [65.8, 1.8], [65.8, 27.8], [63.2, 27.8], 
              [10.2, 50.2], [63.2,0.2],[ 63.2, 46.8], [62.2 ,46.8], [62.2, 40.2], [63.2 ,40.2], [63.2 ,35.2], [65.8 ,35.2], [65.8 ,38.2], [94.2 ,38.2], [94.2 ,0.8], 
              [82.8, 0.8]]
 polygon = shapely.Polygon(pointList)
-point = shapely.Point(46, 30)
+point = shapely.Point(68.2 ,34.2)
 print(not polygon.contains(point))
 image = np.zeros((100, 100, 1), dtype=np.uint8)
 DrawMultiline(image,polygon,color = (255))
+vp = FindVisibleRegion(polygon,point,32,True)
+DrawMultiline(image,vp,color = (150))
 DrawPoints(image,point.x,point.y,(30),-1)
 cv2.imwrite('test.png',image)
-vp = FindVisibleRegion(polygon,point,32,True)

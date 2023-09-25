@@ -17,7 +17,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/ppod_sm')
+            self.model.save('saved_model/ppo_var')
             pass
         return True
     
@@ -36,9 +36,9 @@ if __name__ == "__main__":
         features_extractor_class=CustomCombinedExtractor,
         net_arch=[256, 256]
     )
-    model = PPO("MultiInputPolicy", use_expert = True, env = env, verbose=1,batch_size=2**9,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
-    # model = PPO("MultiInputPolicy", env = env, verbose=1,batch_size=2**9,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
-    # model.set_parameters("saved_model/ppod")
+    # model = PPO("MultiInputPolicy", use_expert = True, env = env, verbose=1,batch_size=2**9,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
+    model = PPO("MultiInputPolicy", env = env, verbose=1,batch_size=2**10,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
+    model.set_parameters("saved_model/ppo_var")
     model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
 
 

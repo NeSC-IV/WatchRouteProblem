@@ -66,3 +66,6 @@ WatchRouteProblem
     └── WRP_solver.py #main函数
 ```
 
+
+1. c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) compute_visibilty_cpp.cpp -o visibility$(python3-config --extension-suffix) -lCGAL -lgmp -lmpfr
+2. c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) a_star.cpp -o astar$(python3-config --extension-suffix)

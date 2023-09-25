@@ -50,6 +50,7 @@ def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
         visiblePolygon = SelectMaxPolygon(visiblePolygon)
         if(visiblePolygon == None):
             print("failed find visibile polygon")
+ 
         return visiblePolygon.simplify(0.05, preserve_topology=False)
     except :
         print("FindVisibleRegion failed")
@@ -111,7 +112,7 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     tempVisiblePolygon = visiblePolygon
     polygons = list(split(tempVisiblePolygon, chord).geoms)
     for polygon in polygons:
-        if polygon.covers(watcher):
+        if type(polygon) == (shapely.Polygon) and polygon.contains(watcher):
             return polygon
     print(polygons)
     return polygon
@@ -120,8 +121,7 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
     unCoveredPolygon = args[0]
     initialPolygon = args[1]
     watcher = args[2]
-    d = args[3]/2
-
+    d = args[3]
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d,True)  # d为可视距离
 
@@ -200,8 +200,15 @@ def PolygonCover(polygon, d, coverage, iterations=32):
         RList =(pool.map(MaximallyCoveringConvexSubset,[(unCoverPolygon, polygon, point, d) for point in pointList]))
         RList.append(R0)
         bestR = max(RList,key=lambda R:(R.intersection(unCoverPolygon)).area)
+        bestR = bestR.simplify(0.05,False)
 
         polygonCoverList.append(bestR)
         unCoverPolygon = unCoverPolygon.difference(bestR)
+        if(type(unCoverPolygon) == shapely.GeometryCollection):
+            polygonList = []
+            for geoms in unCoverPolygon.geoms:
+                if type(geoms) == shapely.Polygon:
+                    polygonList.append(geoms)
+            unCoverPolygon = shapely.GeometryCollection(polygonList)
 
     return polygonCoverList

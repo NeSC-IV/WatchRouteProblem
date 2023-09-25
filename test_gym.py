@@ -31,9 +31,11 @@ def main():
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
+        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
+        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/")
         obs = gridEnv.reset()
         rewardSum = 0
         Done = False
