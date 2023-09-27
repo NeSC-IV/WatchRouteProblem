@@ -29,7 +29,7 @@ def make_env(env_id, rank = 0, logFile = None,seed=0):
 
 if __name__ == "__main__":
     env_id = 'IL/GridWorld-v2'
-    num_cpu = 8
+    num_cpu = 16
     env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
     callback = SaveOnBestTrainingRewardCallback(check_freq=10000)
     policy_kwargs = dict(
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     )
     # model = PPO("MultiInputPolicy", use_expert = True, env = env, verbose=1,batch_size=2**9,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
     model = PPO("MultiInputPolicy", env = env, verbose=1,batch_size=2**10,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
-    model.set_parameters("saved_model/ppo_var")
+    # model.set_parameters("saved_model/ppo_var")
     model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
 
 

@@ -10,7 +10,7 @@ import time
 import logging
 import math
 logging.basicConfig(level=logging.DEBUG)
-@func_set_timeout(600)
+@func_set_timeout(6000)
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     convexSet = []
     sampleList = []
@@ -30,7 +30,7 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     minx, miny, maxx, maxy = polygon.bounds
     maxx = math.ceil(maxx/10)*10
     maxy = math.ceil(maxy/10)*10
-    gridMap = np.zeros((int(maxy), int(maxx), 1), dtype=np.uint8)
+    gridMap = np.zeros((int(maxy), int(maxx)), dtype=np.uint8)
     gridMap = Polygon2Gird(polygon.buffer(-1, join_style=2),255,gridMap)
 
     

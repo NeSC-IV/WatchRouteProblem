@@ -124,6 +124,8 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
             }
         }
     }
+    if(!(current->coordinates == target_))
+        return res;
 
     CoordinateList path;
     std::vector<int> temp(2);
@@ -131,7 +133,7 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
         // path.push_back(current->coordinates);
         temp[0] = current->coordinates.x;
         temp[1] = current->coordinates.y;
-        res.push_back(temp);
+        res.emplace_back(temp);
         current = current->parent;
     }
 
@@ -197,33 +199,36 @@ AStar::uint AStar::Heuristic::octagonal(Vec2i source_, Vec2i target_)
     return 10 * (delta.x + delta.y) + (-6) * std::min(delta.x, delta.y);
 }
 namespace py = pybind11;
-PYBIND11_MODULE(astar, m) {
-    m.def("sum_2d", [](py::array_t<int> _grid, py::array_t<int> _cityPos, py::array_t<int> _goodsClass) {
+PYBIND11_MODULE(Astar, m) {
+    m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos) {
+    // m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos, py::array_t<int> _goodsClass) {
         std::vector<std::vector<std::vector<std::vector<int>>>> res;
+        res.reserve(10000);
         auto grid = _grid.unchecked<2>();
         pybind11::detail::unchecked_reference<int, 2>* pGrid = &grid;
         auto cityPos = _cityPos.unchecked<2>();
-        auto goodsClass = _goodsClass.unchecked<1>();
+        // auto goodsClass = _goodsClass.unchecked<1>();
         int cityNum = cityPos.shape(0);
         AStar::Generator generator;
-        generator.setWorldSize({100, 100});
+        generator.setWorldSize({grid.shape(1), grid.shape(0)});
         generator.setHeuristic(AStar::Heuristic::euclidean);
         generator.setDiagonalMovement(true);
         generator.setGrid(pGrid);
         for (py::ssize_t i = 0; i < cityNum; i++){
+            std::cout << i << std::endl;
             AStar::Vec2i start({cityPos(i,0),cityPos(i,1)});
             std::vector<std::vector<std::vector<int>>> temp;
             for (py::ssize_t j = 0; j < i; j++){
                 std::vector<std::vector<int>> revs(res[j][i]);
                 std::reverse(revs.begin(),revs.end());
-                temp.push_back(revs);
+                temp.emplace_back(revs);
             }
             for (py::ssize_t j = i; j < cityNum; j++){
                 AStar::Vec2i end({cityPos(j,0),cityPos(j,1)});
                 auto path = generator.findPath(start,end);
-                temp.push_back(path);
+                temp.emplace_back(path);
             }
-            res.push_back(temp);
+            res.emplace_back(temp);
         }
         // std::cout << (*pGrid) << std::endl;
         return res;

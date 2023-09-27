@@ -3,6 +3,7 @@ import random
 import logging
 from multiprocessing import Pool,Manager
 from .astar.a_star import findPath
+from .astar_cpp import RecordDistanceCPP
 from ..Global import *
 
 def ColisionFreeDistance(args):#多线程求无碰撞距离
@@ -20,8 +21,7 @@ def ColisionFreeDistance(args):#多线程求无碰撞距离
         distances.append(distance)
         paths.append(path)
 
-def record_distance(city_position, grid):
-    num = len(city_position)  # 城市数量
+def RecordDistance(city_position, grid, num):
     manager = Manager()
     tempPaths = [manager.list() for _ in range(num)]
     tempDistances = [manager.list() for _ in range(num)]
@@ -29,7 +29,7 @@ def record_distance(city_position, grid):
         for j in range(i):
             tempPaths[i].append(0)
             tempDistances[i].append(0)
-    pool = Pool(threadNum)
+    pool = Pool(1)
 
     pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
     pool.close()
@@ -58,7 +58,8 @@ def GetTrace(tspCase, grid):
     city_position, goods_class, city_class = tspCase
     city_num = len(city_position)             # 城市数目
     goods_num = len(set(goods_class))         # 商品种类数目
-    path, distance = record_distance(city_position, grid)  # 得到距离矩阵
+    path, distance = RecordDistance(city_position, grid, city_num)  # 得到距离矩阵
+    # path, distance = RecordDistanceCPP(city_position, grid, city_num)  # 得到距离矩阵
 
     iter_num = 1000       # 迭代次数
     tabu_list = []        # 禁忌表
