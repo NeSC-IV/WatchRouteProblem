@@ -58,8 +58,8 @@ def GetTrace(tspCase, grid):
     city_position, goods_class, city_class = tspCase
     city_num = len(city_position)             # 城市数目
     goods_num = len(set(goods_class))         # 商品种类数目
-    path, distance = RecordDistance(city_position, grid, city_num)  # 得到距离矩阵
-    # path, distance = RecordDistanceCPP(city_position, grid, city_num)  # 得到距离矩阵
+    # path, distance = RecordDistance(city_position, grid, city_num)  # 得到距离矩阵
+    path, distance = RecordDistanceCPP(city_position, grid, city_num)  # 得到距离矩阵
 
     iter_num = 1000       # 迭代次数
     tabu_list = []        # 禁忌表

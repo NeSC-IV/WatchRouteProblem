@@ -10,7 +10,7 @@
 #include <pybind11/stl.h>
 #include <vector>
 #include <functional>
-#include <set>
+#include <unordered_map>
 
 namespace AStar
 {
@@ -38,7 +38,7 @@ namespace AStar
         uint getScore();
     };
 
-    using NodeSet = std::vector<Node*>;
+    using NodeSet = std::unordered_map<int,Node*>;
 
     class Generator
     {
@@ -53,9 +53,6 @@ namespace AStar
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
         std::vector<std::vector<int>> findPath(Vec2i source_, Vec2i target_);
-        void addCollision(Vec2i coordinates_);
-        void removeCollision(Vec2i coordinates_);
-        void clearCollisions();
 
     private:
         HeuristicFunction heuristic;

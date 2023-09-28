@@ -81,14 +81,14 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
     NodeSet openSet, closedSet;
     openSet.reserve(10000);
     closedSet.reserve(10000);
-    openSet.push_back(new Node(source_));
+    openSet.emplace(source_.x*10000+source_.y,new Node(source_));
 
     while (!openSet.empty()) {
         auto current_it = openSet.begin();
-        current = *current_it;
+        current = current_it->second;
 
         for (auto it = openSet.begin(); it != openSet.end(); it++) {
-            auto node = *it;
+            auto node = it->second;
             if (node->getScore() <= current->getScore()) {
                 current = node;
                 current_it = it;
@@ -99,8 +99,9 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
             break;
         }
 
-        closedSet.push_back(current);
-        openSet.erase(current_it);
+        // closedSet.push_back(current);
+        closedSet.emplace(current->coordinates.x*10000+current->coordinates.y,current);
+        openSet.erase(current_it->second->coordinates.x*10000+current_it->second->coordinates.y);
 
         for (uint i = 0; i < directions; ++i) {
             Vec2i newCoordinates(current->coordinates + direction[i]);
@@ -116,7 +117,9 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
                 successor = new Node(newCoordinates, current);
                 successor->G = totalCost;
                 successor->H = heuristic(successor->coordinates, target_);
-                openSet.push_back(successor);
+                // openSet.push_back(successor);
+                openSet.emplace(successor->coordinates.x*10000+successor->coordinates.y,successor);
+                
             }
             else if (totalCost < successor->G) {
                 successor->parent = current;
@@ -139,24 +142,28 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
 
     releaseNodes(openSet);
     releaseNodes(closedSet);
-
     return res;
 }
 
 AStar::Node* AStar::Generator::findNodeOnList(NodeSet& nodes_, Vec2i coordinates_)
 {
-    for (auto node : nodes_) {
-        if (node->coordinates == coordinates_) {
-            return node;
-        }
+
+    // for (auto node : nodes_) {
+    //     if (node->coordinates == coordinates_) {
+    //         return node;
+    //     }
+    // }
+    auto iter = nodes_.find(coordinates_.x*10000+coordinates_.y);
+    if (iter == nodes_.end()){
+        return nullptr;
     }
-    return nullptr;
+    return iter->second;
 }
 
 void AStar::Generator::releaseNodes(NodeSet& nodes_)
 {
     for (auto it = nodes_.begin(); it != nodes_.end();) {
-        delete *it;
+        delete it->second;
         it = nodes_.erase(it);
     }
 }
