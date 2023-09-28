@@ -1,4 +1,3 @@
-#include "AStar.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -7,6 +6,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <algorithm>
+#include <mutex>
+#include "AStar.hpp"
+#include "thread_pool.hpp"
 
 using namespace std::placeholders;
 
@@ -69,10 +71,9 @@ void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
 // {
 //     walls.clear();
 // }
-
-std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i target_)
+std::vector<std::vector<int>>* AStar::Generator::findPath(Vec2i source_, Vec2i target_)
 {
-    std::vector<std::vector<int>> res;
+    auto res = new std::vector<std::vector<int>>();
     if (detectCollision(source_) || detectCollision(target_)){
         std::cout << "AStar::Generator::findPath input invalid !" << std::endl;
         return res;
@@ -136,7 +137,7 @@ std::vector<std::vector<int>> AStar::Generator::findPath(Vec2i source_, Vec2i ta
         // path.push_back(current->coordinates);
         temp[0] = current->coordinates.x;
         temp[1] = current->coordinates.y;
-        res.emplace_back(temp);
+        res->emplace_back(temp);
         current = current->parent;
     }
 
@@ -205,39 +206,83 @@ AStar::uint AStar::Heuristic::octagonal(Vec2i source_, Vec2i target_)
     auto delta = std::move(getDelta(source_, target_));
     return 10 * (delta.x + delta.y) + (-6) * std::min(delta.x, delta.y);
 }
+AStar::Generator generator;
+
+using dvector = std::vector<std::vector<int>>;
+std::vector<std::vector<dvector*>> * res = nullptr;
+
+void GetSinglePath(int i, int j){
+    dvector* path = nullptr; 
+    if((*res)[j][i] != 0){
+        path  = new dvector(*((*res)[j][i]));
+        std::reverse(path->begin(),path->end());
+    }
+    else{
+        auto cityPos = *(generator._cityPos);
+        AStar::Vec2i start({cityPos(i,0),cityPos(i,1)});
+        AStar::Vec2i target({cityPos(j,0),cityPos(j,1)});
+        path = generator.findPath(start,target);
+        std::reverse(path->begin(),path->end());
+    }
+    (*res)[i][j] = path;
+}
+
 namespace py = pybind11;
+
 PYBIND11_MODULE(Astar, m) {
     m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos) {
-    // m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos, py::array_t<int> _goodsClass) {
-        std::vector<std::vector<std::vector<std::vector<int>>>> res;
-        res.reserve(10000);
         auto grid = _grid.unchecked<2>();
-        pybind11::detail::unchecked_reference<int, 2>* pGrid = &grid;
+        auto pGrid = &grid;
         auto cityPos = _cityPos.unchecked<2>();
-        // auto goodsClass = _goodsClass.unchecked<1>();
         int cityNum = cityPos.shape(0);
-        AStar::Generator generator;
+
+        res = new std::vector<std::vector<dvector*>>(cityNum,std::vector<dvector*>(cityNum,0));
+
         generator.setWorldSize({grid.shape(1), grid.shape(0)});
         generator.setHeuristic(AStar::Heuristic::euclidean);
         generator.setDiagonalMovement(true);
         generator.setGrid(pGrid);
-        for (py::ssize_t i = 0; i < cityNum; i++){
-            std::cout << i << std::endl;
-            AStar::Vec2i start({cityPos(i,0),cityPos(i,1)});
-            std::vector<std::vector<std::vector<int>>> temp;
-            for (py::ssize_t j = 0; j < i; j++){
-                std::vector<std::vector<int>> revs(res[j][i]);
-                std::reverse(revs.begin(),revs.end());
-                temp.emplace_back(revs);
+        generator._cityPos = &cityPos;
+
+        BS::thread_pool pool;
+        bool useMultiThread = true;
+
+        if(useMultiThread){
+            for (py::ssize_t i = 0; i < cityNum; i++){
+                for(py::ssize_t j = 0; j < cityNum; j++){
+                    AStar::Vec2i start({cityPos(i,0),cityPos(i,1)});
+                    pool.push_task(GetSinglePath,i,j);
+                }
             }
-            for (py::ssize_t j = i; j < cityNum; j++){
-                AStar::Vec2i end({cityPos(j,0),cityPos(j,1)});
-                auto path = generator.findPath(start,end);
-                temp.emplace_back(path);
-            }
-            res.emplace_back(temp);
+            pool.wait_for_tasks();
         }
-        // std::cout << (*pGrid) << std::endl;
+        else{
+            for (py::ssize_t i = 0; i < cityNum; i++){
+                std::cout << i << std::endl;
+                AStar::Vec2i start({cityPos(i,0),cityPos(i,1)});
+                for(py::ssize_t j = 0; j < cityNum; j++){
+                    dvector* path = nullptr; 
+                    if(j<i){
+                        path  = new dvector(*((*res)[j][i]));
+                        std::reverse(path->begin(),path->end());
+                    }
+                    else{
+                        AStar::Vec2i end({cityPos(j,0),cityPos(j,1)});
+                        path = generator.findPath(start,end);
+                    }
+                    (*res)[i][j] = path;
+                }
+            }
+        }
         return res;
-    });
+    },py::return_value_policy::move);
+
+    m.def("test", []() {
+        auto a = new std::vector<std::vector<dvector*>>(5,std::vector<dvector*>(5,0));
+        auto pb = new dvector();
+        std::vector<int> v({1,2,3,4});
+        pb->emplace_back(v);
+        (*a)[1][1] = pb;
+        return a;
+    },py::return_value_policy::move);
 }

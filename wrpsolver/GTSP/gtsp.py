@@ -29,7 +29,7 @@ def RecordDistance(city_position, grid, num):
         for j in range(i):
             tempPaths[i].append(0)
             tempDistances[i].append(0)
-    pool = Pool(1)
+    pool = Pool(24)
 
     pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
     pool.close()

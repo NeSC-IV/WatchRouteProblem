@@ -52,7 +52,9 @@ namespace AStar
         void setWorldSize(Vec2i worldSize_);
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
-        std::vector<std::vector<int>> findPath(Vec2i source_, Vec2i target_);
+        std::vector<std::vector<int>>* findPath(Vec2i source_, Vec2i target_);
+        pybind11::detail::unchecked_reference<int, 2>* _cityPos;
+
 
     private:
         HeuristicFunction heuristic;
