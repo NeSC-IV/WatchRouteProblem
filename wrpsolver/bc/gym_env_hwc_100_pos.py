@@ -59,6 +59,10 @@ class GridWorldEnv(gym.Env):
             1: np.array([-STEP, 0]),
             2: np.array([0, STEP]),
             3: np.array([0, -STEP]),
+            # 4: np.array([STEP, STEP]),
+            # 5: np.array([-STEP, -STEP]),
+            # 6: np.array([-STEP, STEP]),
+            # 7: np.array([STEP, -STEP]),
         }
     def _getObservation(self,pos):
         image = self.initImage.copy()
@@ -74,10 +78,10 @@ class GridWorldEnv(gym.Env):
                 result = False
             else:
                 if(visiblePolygon == None):
-                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 20,useCPP=True)
+                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40,useCPP=True)
                     visiblePolygon = stepVisiblePolygon
                 else:
-                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 20,useCPP=True)
+                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40,useCPP=True)
                     visiblePolygon = SelectMaxPolygon(visiblePolygon.union(stepVisiblePolygon))
             if(visiblePolygon == None):
                 print("visiblePolygon get failed")
@@ -111,10 +115,11 @@ class GridWorldEnv(gym.Env):
                                 "localImage1":self.localObs1.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1),"globalImage":self.globalObs.reshape(GLOBAL_SHAPE,GLOBAL_SHAPE,1)}
             # self.observation = {"agent":np.array(agent),"localImage":np.array(self.localObs),"globalImage":image.reshape(100,100,1)}
             if self.render:
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/'+str(self.stepCnt)+'.png',self.image)
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/'+str(self.stepCnt)+'.png',self.localObs1)
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/'+str(self.stepCnt)+'.png',self.localObs)
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/'+str(self.stepCnt)+'.png',self.globalObs)
+                savePath = DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/../../render_saved/'
+                cv2.imwrite(savePath+'tmp/'+str(self.stepCnt)+'.png',self.image)
+                cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObs1)
+                cv2.imwrite(savePath+'tmp2/'+str(self.stepCnt)+'.png',self.localObs)
+                cv2.imwrite(savePath+'tmp3/'+str(self.stepCnt)+'.png',self.globalObs)
         except Exception as e:
             print(e)
             return False
@@ -191,7 +196,7 @@ class GridWorldEnv(gym.Env):
             
             repeatPunishment = - 0.001 if (self.pos in self.path[-PATH_LEN:]) else 0
             
-            if(self.observationPolygon.area/self.polygon.area > 0.9):
+            if(self.observationPolygon.area/self.polygon.area > 0.95):
                 Done = True
                 reward+=1
             reward += float(exploreReward+timePunishment+repeatPunishment)

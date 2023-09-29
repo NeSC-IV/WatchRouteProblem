@@ -240,7 +240,7 @@ PYBIND11_MODULE(Astar, m) {
 
         generator.setWorldSize({grid.shape(1), grid.shape(0)});
         generator.setHeuristic(AStar::Heuristic::euclidean);
-        generator.setDiagonalMovement(true);
+        generator.setDiagonalMovement(false);
         generator.setGrid(pGrid);
         generator._cityPos = &cityPos;
 

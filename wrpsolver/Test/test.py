@@ -15,7 +15,7 @@ from .draw_pictures import *
 
 def RunTest(seed = 1):
     iterationNum = 32
-    d = 20
+    d = 40
     coverageRate = 0.97
 
     # 读取命令行参数
@@ -60,6 +60,8 @@ def RunTest(seed = 1):
 
     polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
         polygon, coverageRate, d, iterationNum)
+    print(len(sampleList))
+    print(len(path))
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0

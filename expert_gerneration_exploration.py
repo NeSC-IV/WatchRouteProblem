@@ -5,12 +5,13 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path/'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_var/'
 JSONPATHS = os.listdir(DIRPATH)
 ACTIONDICT =    {
                     (1,0):0,(-1,0):1,(0,1):2,(0,-1):3,
+                    # (1,1):4,(-1,-1):5,(-1,1):6,(1,-1):7
                 }
-
+render = False
 # import random
 # random.shuffle ( JSONPATHS )
 
@@ -19,7 +20,7 @@ length = Value('i', 0)
 manager = Manager()
 trajectories = manager.list()
 def GetSingleTrajectory(jsonName):
-    env = GridWorldEnv(render=False)
+    env = GridWorldEnv(render=render)
     with open(DIRPATH+jsonName) as f:
         jsonData = json.load(f)
     polygon = shapely.Polygon(jsonData['polygon'])
@@ -85,8 +86,8 @@ def main():
 
     trajectories = []
     length = 0
-    env = GridWorldEnv(render=True)
-    for jsonName in JSONPATHS[29:30]:
+    env = GridWorldEnv(render=render)
+    for jsonName in JSONPATHS[:]:
         with open(DIRPATH+jsonName) as f:
             jsonData = json.load(f)
         polygon = shapely.Polygon(jsonData['polygon'])

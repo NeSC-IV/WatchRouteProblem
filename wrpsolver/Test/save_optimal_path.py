@@ -8,7 +8,7 @@ from ..Global import pic_size
 import numpy as np
 import logging
 import os
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_var/"
 os.makedirs(dirPath, exist_ok=True)
 logging.basicConfig(level=logging.INFO) 
 class NpEncoder(json.JSONEncoder):
@@ -22,22 +22,22 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 def SaveOptimalPath():
     iterationNum = 64
-    coverageRate = 0.95
-    d= 800
+    coverageRate = 0.98
+    d = 40
 
     # 随机生成多边形
-    for seed in range(3687,20000):
-    # for seed in range(20000,0,-1):
+    for seed in range(0,30000):
         try:
-            polygonPints,filename= vis_maps.GetPolygon(seed)
-            polygon = shapely.Polygon(polygonPints).buffer(-0.8, cap_style=1, join_style=2).simplify(0.05, preserve_topology=False)
+            pointList,filename, _= vis_maps.GetPolygon(seed)
+            polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
             polygonPints = list(polygon.exterior.coords)
-            polygonCoverList, sampleList,order, length, paths, isSuccess = WatchmanRouteProblemSolver(polygon, coverageRate, 32, iterationNum)
+            polygonCoverList, sampleList,order, length, paths, isSuccess = WatchmanRouteProblemSolver(polygon, coverageRate, d, iterationNum)
             if isSuccess:
                 jsonData = {'polygon':polygonPints,'paths':paths}
                 print(seed,length)
                 with open(dirPath+filename+'.json','w') as f:
                     json.dump(jsonData,f,cls=NpEncoder)
+            break
         except:
             pass
             continue
