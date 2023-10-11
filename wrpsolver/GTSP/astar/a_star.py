@@ -10,7 +10,7 @@ class AStarSolver(AStar):
 
     def __init__(self,grid):
         self.grid = grid
-        self.step = 1
+        self.step = 3
         self.y_len = self.grid.shape[0]
         self.x_len = self.grid.shape[1]
     def isReachable(self, point):
@@ -45,8 +45,8 @@ class AStarSolver(AStar):
         neighborList = [
                         (x+step, y), (x-step, y),
                         (x, y+step), (x, y-step),
-                        (x-step,y-step),(x+step,y+step),
-                        (x+step,y-step),(x-step,y+step),
+                        # (x-step,y-step),(x+step,y+step),
+                        # (x+step,y-step),(x-step,y+step),
 
                         # (x+miniStep, y), (x-miniStep, y),
                         # (x, y+miniStep), (x, y-miniStep),

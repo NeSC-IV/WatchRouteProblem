@@ -6,6 +6,8 @@ import numpy as np
 import cv2
 import math
 import shapely
+from shapely.validation import make_valid
+
 import os
 import random
 from random import choice
@@ -14,16 +16,17 @@ import copy
 from ..Test.draw_pictures import DrawMultiline,DrawPolygon,DrawPoints
 from ..MACS.polygons_coverage import FindVisibleRegion,SelectMaxPolygon
 from ..Test.vis_maps import GetPolygon
-STEP = 1
+STEP = 3
 PIC_SIZE = 100
 PIC_DIR_NAMES = None
-MAXSTEP = 1000
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path/"
+MAXSTEP = 400
+DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_60_3/"
 IMAGE = np.empty((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
 IMAGE.fill(150)
-RANGE = 48
-LOCAL_SHAPE = (RANGE*2+1)*1
-GLOBAL_SHAPE = 100
+RANGE = 64
+LOCAL_SHAPE = int((RANGE*2+1)/2)
+LOCAL_SHAPE1 = int(32*2+1)
+GLOBAL_SHAPE = 200
 PATH_LEN = 30
 
 class GridWorldEnv(gym.Env):
@@ -39,6 +42,7 @@ class GridWorldEnv(gym.Env):
         self.globalObs = None
         self.localObs = None
         self.localObs1 = None
+        self.localObs2 = None
         self.unknownGridNum = None
         self.path = []
         self.stepCnt = 0
@@ -47,9 +51,10 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "agent": spaces.Box(0, PIC_SIZE, shape=(12,), dtype=np.float32),
-                "localImage":spaces.Box(0, 255, shape=(5,5), dtype=np.uint8),
-                "localImage1":spaces.Box(0, 255, shape=(LOCAL_SHAPE,LOCAL_SHAPE,1), dtype=np.uint8),
-                "globalImage":spaces.Box(0, 255, shape=(GLOBAL_SHAPE,GLOBAL_SHAPE,1), dtype=np.uint8),
+                "localImage":spaces.Box(0, 255, shape=(4,STEP*2), dtype=np.float16),
+                "localImage1":spaces.Box(0, 255, shape=(LOCAL_SHAPE1,LOCAL_SHAPE1,1), dtype=np.uint8),
+                "localImage2":spaces.Box(0, 255, shape=(LOCAL_SHAPE,LOCAL_SHAPE,1), dtype=np.uint8),
+                # "globalImage":spaces.Box(0, 255, shape=(GLOBAL_SHAPE,GLOBAL_SHAPE,1), dtype=np.uint8),
             }
         )
         self.action_space = spaces.Discrete(4)
@@ -72,68 +77,79 @@ class GridWorldEnv(gym.Env):
         result = True
         stepVisiblePolygon = shapely.Point(0,0)
 
-        try:
-            if self.MoveOutOfRange() or (not self.polygon.contains(point)):
-                visiblePolygon = self.observationPolygon
-                result = False
-            else:
-                if(visiblePolygon == None):
-                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40,useCPP=True)
-                    visiblePolygon = stepVisiblePolygon
-                else:
-                    stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40,useCPP=True)
-                    visiblePolygon = SelectMaxPolygon(visiblePolygon.union(stepVisiblePolygon))
-            if(visiblePolygon == None):
-                print("visiblePolygon get failed")
-                return False
-            visiblePolygon = visiblePolygon.simplify(0.05,False)
-            obstacle = (visiblePolygon.buffer(1.5,join_style=2).intersection(self.o))
-            frontier = visiblePolygon.boundary.difference(obstacle.buffer(2,join_style=2))
-            frontierList = GetFrontierList(frontier)
-            agent = list(self.pos) + frontierList
-            
-            DrawMultiline(image,obstacle,color = (0))
-            DrawMultiline(image,visiblePolygon, (255))
-            DrawMultiline(image,stepVisiblePolygon, (230))
-            for p in self.path[-PATH_LEN:]:
-                x = p[0]
-                y = p[1]
-                image[y][x] = 80
-            self.localObs = self.GetLocalImage(image,pos[0],pos[1],2)
-            DrawMultiline(image,frontier, color=(200))
-            DrawPoints(image,point.x,point.y,(30),-1)
-            self.localObs1 = self.GetLocalImage(image,pos[0],pos[1],RANGE)
-            self.localObs1 = cv2.resize(self.localObs1,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
-            self.observationPolygon = visiblePolygon
-            self.globalObs = cv2.resize(image,(GLOBAL_SHAPE,GLOBAL_SHAPE),interpolation = cv2.INTER_NEAREST)
-            for p in self.path[:-PATH_LEN]:
-                x = p[0]
-                y = p[1]
-                image[y][x] = 80
-            self.image = image
-            self.observation = {"agent":np.array(agent),"localImage":np.array(self.localObs),
-                                "localImage1":self.localObs1.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1),"globalImage":self.globalObs.reshape(GLOBAL_SHAPE,GLOBAL_SHAPE,1)}
-            # self.observation = {"agent":np.array(agent),"localImage":np.array(self.localObs),"globalImage":image.reshape(100,100,1)}
-            if self.render:
-                savePath = DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/../../render_saved/'
-                cv2.imwrite(savePath+'tmp/'+str(self.stepCnt)+'.png',self.image)
-                cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObs1)
-                cv2.imwrite(savePath+'tmp2/'+str(self.stepCnt)+'.png',self.localObs)
-                cv2.imwrite(savePath+'tmp3/'+str(self.stepCnt)+'.png',self.globalObs)
-        except Exception as e:
-            print(e)
-            return False
+        # try:
+        if self.stepCnt > 0 and self.MoveOutOfRange():
+            visiblePolygon = self.observationPolygon
+            result = False
         else:
-            return result
+            if(visiblePolygon == None):
+                stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
+                visiblePolygon = stepVisiblePolygon
+            else:
+                stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
+                visiblePolygon = visiblePolygon.union(stepVisiblePolygon)
+                visiblePolygon = SelectMaxPolygon(visiblePolygon.simplify(0.5,False))
+
+        if(visiblePolygon == None):
+            print("visiblePolygon get failed")
+            return False
+        bufferedVisiblePolygon = visiblePolygon.buffer(1)
+        if not bufferedVisiblePolygon.is_valid:
+            bufferedVisiblePolygon = make_valid(bufferedVisiblePolygon)
+        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.1,False)
+        bufferedObstacle = obstacle.buffer(2,join_style=2)
+        if not bufferedObstacle.is_valid:
+            bufferedObstacle = make_valid(bufferedObstacle)
+        frontier = visiblePolygon.boundary.difference(bufferedObstacle)
+        frontierList = GetFrontierList(frontier)
+        agent = list(self.pos) + frontierList
+        
+        DrawMultiline(image,visiblePolygon, (255))
+        DrawMultiline(image,stepVisiblePolygon, (220))
+        DrawMultiline(image,obstacle,color = (0))
+        for p in self.path[:]:
+            x = p[0]
+            y = p[1]
+            image[y][x] = 80
+        self.localObs = self.GetObscatleMap(image,pos[0],pos[1])
+        self.localObsImage = self.GetLocalImage(image,pos[0],pos[1],STEP*2)
+        DrawMultiline(image,frontier, color=(180))
+        DrawPoints(image,point.x,point.y,(30),2)
+        self.localObs1 = self.GetLocalImage(image,pos[0],pos[1],32)
+        self.localObs2 = self.GetLocalImage(image,pos[0],pos[1],RANGE)
+        self.localObs2 = cv2.resize(self.localObs2,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
+        self.observationPolygon = visiblePolygon
+        self.image = image
+        self.observation = {"agent":np.array(agent),"localImage":np.array(self.localObs/255.0),"localImage1":self.localObs1.reshape(LOCAL_SHAPE1,LOCAL_SHAPE1,1),
+                            "localImage2":self.localObs2.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1)}
+        if self.render:
+            savePath = os.path.dirname(os.path.abspath(__file__))+'/../../render_saved/'
+            cv2.imwrite(savePath+'tmp/'+str(self.stepCnt)+'.png',self.image)
+            cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObsImage)
+            cv2.imwrite(savePath+'tmp2/'+str(self.stepCnt)+'.png',self.localObs1)
+            cv2.imwrite(savePath+'tmp3/'+str(self.stepCnt)+'.png',self.localObs2)
+            image = self.initImage.copy()
+            image.fill(0)
+            DrawMultiline(image,self.polygon, (255))
+            cv2.imwrite(savePath+'polygon.png',image)
+        # except Exception as e:
+        #     print(e)
+        #     return False
+        # else:
+        #     return result
+        return result
         
     def _get_info(self):
         return {"pos": self.pos}
     
     def reset(self, seed=None, polygon=None, startPoint = None):
         self.observationPolygon = None
+        self.obstacle = None
         self.observation = self.observation_space.sample()
         self.globalObs = None
         self.localObs = None
+        self.localObs1 = None
+        self.localObs2 = None
         self.unknownGridNum = None
         self.exploredRange = None
         self.path = []
@@ -146,6 +162,7 @@ class GridWorldEnv(gym.Env):
             self.polygon = RandomGetPolygon()
         if not self.pos:
             self.pos = GetStartPoint(self.polygon)
+        self.polygon = self.polygon.buffer(0.7,join_style=2)
         minx, miny, maxx, maxy = self.polygon.bounds
         self.maxx = math.ceil(maxx/10)*10
         self.maxy = math.ceil(maxy/10)*10
@@ -173,6 +190,7 @@ class GridWorldEnv(gym.Env):
 
         #更新位置
         direction = self._action_to_direction[action]
+        self.action = action
         self.pos = (self.pos+direction).tolist()
         self.stepCnt += 1
 
@@ -191,10 +209,11 @@ class GridWorldEnv(gym.Env):
         if not Done:
 
             tempExploredRange = self.observationPolygon.area/self.polygon.area
-            exploreReward = (tempExploredRange - self.exploredRange)*2
+            exploreReward = (tempExploredRange - self.exploredRange)
+            exploreReward = exploreReward if exploreReward > 1e-4 else 0
             self.exploredRange = tempExploredRange
             
-            repeatPunishment = - 0.001 if (self.pos in self.path[-PATH_LEN:]) else 0
+            repeatPunishment = - 0.0 if (self.pos in self.path[:]) else 0
             
             if(self.observationPolygon.area/self.polygon.area > 0.95):
                 Done = True
@@ -206,21 +225,25 @@ class GridWorldEnv(gym.Env):
         return self.observation, reward*gamma, Done ,False, info
     
     def MoveOutOfRange(self):
-        x = self.pos[0]
-        y = self.pos[1]
-        p = shapely.Point(x,y)
-        #out of boundary
-        if (x >= self.maxx) or (y >= self.maxy) or (x <= 0) or (y <= 0):
-            print("here")
-            return True
-        # obstacle
-        if (self.image[y][x] == 0) or (not self.polygon.contains(p)):
-            return True
+        oneStep = self._action_to_direction[self.action]/3
+        pos = np.array(self.pos)
+        for i in range(STEP):
+            pos = (pos - (oneStep * i)).astype(np.int32)
+            x = pos[0]
+            y = pos[1]
+            p = shapely.Point(x,y)
+            #out of boundary
+            if (x >= self.maxx) or (y >= self.maxy) or (x <= 0) or (y <= 0):
+                return True
+            # obstacle
+            if (self.image[y][x] == 0)  or (not self.polygon.contains(p)):
+            # if (self.image[y][x] == 0) :
+                return True
         return False
 
     def GetLocalImage(self,image,x,y,_range=1):
         _range = _range
-        paddleSize = 80
+        paddleSize = 128
         x = x + paddleSize
         y = y + paddleSize
         y_low = max((y-_range),0)
@@ -230,36 +253,57 @@ class GridWorldEnv(gym.Env):
         newImage = cv2.copyMakeBorder(image,paddleSize,paddleSize,paddleSize,paddleSize,cv2.BORDER_CONSTANT,value=0)
         newImage = newImage[y_low:y_high+1,[row for row in range(x_low,x_high+1)]]
         return newImage
+    
+    def GetObscatleMap(self, image, x , y):
+        # image = np.zeros((image.shape[0],image.shape[1]))
+        # image[y][x] = 150
+        result = np.zeros((4,STEP*2))
+        paddleSize = STEP * 4
+        x = x + paddleSize
+        y = y + paddleSize
+        newImage = cv2.copyMakeBorder(image,paddleSize,paddleSize,paddleSize,paddleSize,cv2.BORDER_CONSTANT,value=0)
+        # newImage[y,[row for row in range(x + 1, x + STEP*2 + 1)]] = 255
+        # newImage[y,[row for row in range(x - STEP*2, x)]] = 255
+        # newImage[(y + 1) : (y + STEP*2 + 1), x] = 255
+        # newImage[(y - STEP*2) : y, x] = 255
 
-# def RandomGetPolygon():
-#     global PIC_DIR_NAMES
-#     while True:        
-#         if not PIC_DIR_NAMES:
-#             PIC_DIR_NAMES = os.listdir(DIR_PATH)
-#         testJsonDir = DIR_PATH + choice(PIC_DIR_NAMES)
-#         with open(testJsonDir) as json_file:
-#             json_data = json.load(json_file)
-#         polygon = shapely.Polygon(json_data['polygon'])
-#         image = IMAGE.copy()
-#         DrawMultiline(image,polygon, color=(255))
-#         cv2.imwrite('test.png',image)
-#         if polygon.is_valid:
-#             return polygon
+        result[0] = newImage[y,[row for row in range(x + 1, x + STEP*2 + 1)]]
+        result[1] = newImage[y,[row for row in range(x - STEP*2, x)]]
+        result[2] = newImage[(y + 1) : (y + STEP*2 + 1), x]
+        result[3] = newImage[(y - STEP*2) : y, x]
+        return result
         
+
+
 def RandomGetPolygon():
-    while True:
-        seed = np.random.randint(0,30000)
-        pointList,_,roomNum = GetPolygon(seed)
-        polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
-        if(roomNum <= 3):
-            continue
-        elif(type(polygon) != shapely.Polygon):
-            continue
-        elif polygon.is_valid:
+    global PIC_DIR_NAMES
+    while True:        
+        if not PIC_DIR_NAMES:
+            PIC_DIR_NAMES = os.listdir(DIR_PATH)
+        testJsonDir = DIR_PATH + choice(PIC_DIR_NAMES)
+        with open(testJsonDir) as json_file:
+            json_data = json.load(json_file)
+        polygon = shapely.Polygon(json_data['polygon'])
+        # image = IMAGE.copy()
+        # DrawMultiline(image,polygon, color=(255))
+        # cv2.imwrite('test.png',image)
+        if polygon.is_valid and polygon.area < 30000 and polygon.area > 8000:
             return polygon
         
+# def RandomGetPolygon():
+#     while True:
+#         seed = np.random.randint(0,30000)
+#         pointList,_,roomNum = GetPolygon(seed)
+#         polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
+#         if(roomNum <= 3):
+#             continue
+#         elif(type(polygon) != shapely.Polygon):
+#             continue
+#         elif polygon.is_valid:
+#             return polygon
+        
 def GetStartPoint(polygon):
-    temppolygon = polygon.buffer(-STEP*2,join_style=2)
+    temppolygon = polygon.buffer(-2,join_style=2)
     minx, miny, maxx, maxy = temppolygon.bounds
     while True:
         p = shapely.Point(random.uniform(minx, maxx),

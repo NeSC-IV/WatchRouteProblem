@@ -9,8 +9,8 @@ from .Test.draw_pictures import DrawPolygon,DrawMultiline
 import time
 import logging
 import math
-logging.basicConfig(level=logging.DEBUG)
-@func_set_timeout(10)
+logging.basicConfig(level=logging.INFO)
+@func_set_timeout(30)
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     d = d/2
     convexSet = []
@@ -19,21 +19,25 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     length = 0
     path = []
     isSuccess = True
-    time1 = time.time()
-    convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
-    logging.debug(time.time() - time1)
-    time1 = time.time()
 
-    sampleList= GTSP.GetSample(convexSet, polygon, 15)
-    if not (len(convexSet)==len(sampleList)):
+    if(type(polygon.buffer(-2, join_style=2)) != shapely.Polygon):
         isSuccess = False
         return convexSet,sampleList,order,length,path,isSuccess
     minx, miny, maxx, maxy = polygon.bounds
     maxx = math.ceil(maxx/10)*10
     maxy = math.ceil(maxy/10)*10
     gridMap = np.zeros((int(maxy), int(maxx)), dtype=np.uint8)
-    gridMap = Polygon2Gird(polygon.buffer(-1, join_style=2),255,gridMap)
+    gridMap = Polygon2Gird(polygon.buffer(-2, join_style=2),255,gridMap)
 
+    time1 = time.time()
+    convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
+    logging.debug(time.time() - time1)
+    time1 = time.time()
+
+    sampleList= GTSP.GetSample(convexSet, polygon, 15, gridMap)
+    if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 50) or (len(convexSet) <=3):
+        isSuccess = False
+        return convexSet,sampleList,order,length,path,isSuccess
     
     gtspCase = GTSP.postProcessing(sampleList)
     logging.debug(time.time() - time1)

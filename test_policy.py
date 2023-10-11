@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
 
     env = GridWorldEnv(render=True)
-    model = PPO.load('saved_model/ppo_var')
+    model = PPO.load('saved_model/test')
     rewardList = []
     while True:
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         
         frames = []
         for pic in range(cnt):
-            im = Image.open("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/" + str(pic)+".png")
+            im = Image.open("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/" + str(pic)+".png")
             frames.append(im)
         frame_one = frames[0]
         frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result1.gif", format="GIF", append_images=frames,

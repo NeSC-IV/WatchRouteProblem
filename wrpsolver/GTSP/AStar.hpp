@@ -16,7 +16,7 @@ namespace AStar
 {
     struct Vec2i
     {
-        int x, y;
+        long int x, y;
 
         bool operator == (const Vec2i& coordinates_);
         friend Vec2i operator + (const AStar::Vec2i& left_, const AStar::Vec2i& right_) {

@@ -68,4 +68,4 @@ WatchRouteProblem
 
 
 1. c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) compute_visibilty_cpp.cpp -o visibility$(python3-config --extension-suffix) -lCGAL -lgmp -lmpfr
-2. c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) AStar.cpp -o Astar$(python3-config --extension-suffix)
+2. c++ -O3 -Wall -shared -std=c++17 -fPIC $(python3 -m pybind11 --includes) AStar.cpp -o Astar$(python3-config --extension-suffix)

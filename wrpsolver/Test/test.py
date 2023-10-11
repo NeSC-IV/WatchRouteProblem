@@ -14,9 +14,9 @@ from .draw_pictures import *
 
 
 def RunTest(seed = 1):
-    iterationNum = 32
+    iterationNum = 64
     d = 40
-    coverageRate = 0.97
+    coverageRate = 0.98
 
     # 读取命令行参数
     try:
@@ -48,7 +48,12 @@ def RunTest(seed = 1):
     shutil.rmtree(path)
     os.mkdir(path)
     pointList,_,_ = vis_maps.GetPolygon(seed)
-    polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
+    polygon = shapely.Polygon(pointList).simplify(0.05,True).buffer(-0.7,join_style=2)
+    if(type(polygon) != shapely.Polygon):
+        print(type(polygon))
+        return
+    # polygon = shapely.Polygon(pointList).simplify(0.05,True)
+    print("polygon area: ", polygon.area)
     minx, miny, maxx, maxy = polygon.bounds
     maxx = math.ceil(maxx/10)*10
     maxy = math.ceil(maxy/10)*10
@@ -60,8 +65,6 @@ def RunTest(seed = 1):
 
     polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
         polygon, coverageRate, d, iterationNum)
-    print(len(sampleList))
-    print(len(path))
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print(length)
     length = 0
@@ -88,7 +91,7 @@ def RunTest(seed = 1):
     # 绘制sample 和 访问顺序
     for sample in sampleList:
         for point in sample:
-            DrawPoints(image, point.x, point.y,zoomRate=(1))
+            DrawPoints(image, point[0], point[1],zoomRate=(1))
             pass
     cv2.imwrite('test/test3.png',image)
 

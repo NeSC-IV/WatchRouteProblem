@@ -51,7 +51,7 @@ def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
         if(visiblePolygon == None):
             print("failed find visibile polygon")
  
-        return visiblePolygon.simplify(0.05, preserve_topology=False)
+        return visiblePolygon.simplify(1, preserve_topology=False)
     except :
         print("FindVisibleRegion failed")
         return None
@@ -69,7 +69,8 @@ def GetRayLine(watcher, vertex):
     yGap = vertex[1] - watcher[1]
     rate = (pic_size/(math.hypot(xGap, yGap)))*100000
     if (rate < 100):
-        print(rate,xGap,yGap,vertex)
+        # print(rate,xGap,yGap,vertex)
+        pass
     extendPoint1 = (watcher[0] + xGap*rate,watcher[1] + yGap*rate)
     extendPoint2 = (watcher[0] - xGap*rate,watcher[1] - yGap*rate)
     return shapely.LineString([extendPoint1, extendPoint2])
@@ -114,7 +115,7 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     for polygon in polygons:
         if type(polygon) == (shapely.Polygon) and polygon.contains(watcher):
             return polygon
-    print(polygons)
+    # print(polygons)
     return polygon
 
 def MaximallyCoveringConvexSubset(args):  # MCCS
@@ -125,9 +126,6 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
     visiblePolygon = FindVisibleRegion(
         initialPolygon, watcher, d,True)  # d为可视距离
 
-    while not (visiblePolygon.covers(watcher)):
-        print(visiblePolygon,watcher)
-        visiblePolygon = FindVisibleRegion(initialPolygon, watcher, d, False)  # d为可视距离
     kernelPolygon, reflexPointList = GetKernel(visiblePolygon, watcher)
     reflexPointList.sort(key=lambda watcher: shapely.distance(
         kernelPolygon, shapely.Point(watcher)))  # 列表排序

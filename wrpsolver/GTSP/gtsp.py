@@ -29,7 +29,7 @@ def RecordDistance(city_position, grid, num):
         for j in range(i):
             tempPaths[i].append(0)
             tempDistances[i].append(0)
-    pool = Pool(24)
+    pool = Pool(12)
 
     pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
     pool.close()
@@ -118,7 +118,7 @@ def GetTrace(tspCase, grid):
             if len(candidate) == temp:
                 continue
             # 若不在禁忌表中则放入候选集
-            if (candidate[temp] not in tabu_list) or stepCnt>10000:
+            if (candidate[temp] not in tabu_list) or stepCnt>100000:
                 candidate_value.append(
                     cal_cost(distance, candidate[temp], goods_num))
                 temp += 1

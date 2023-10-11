@@ -33,9 +33,10 @@ AStar::Generator::Generator()
 {
     setDiagonalMovement(false);
     setHeuristic(&Heuristic::manhattan);
+    const int step = 3;
     direction = {
-        { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 },
-        { -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }
+        { 0, step }, { step, 0 }, { 0, -step }, { -step, 0 },
+        // { -step, -step }, { step, step }, { -step, step }, { step, -step }
     };
 }
 
@@ -54,23 +55,6 @@ void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
     heuristic = std::bind(heuristic_, _1, _2);
 }
 
-// void AStar::Generator::addCollision(Vec2i coordinates_)
-// {
-//     walls.push_back(coordinates_);
-// }
-
-// void AStar::Generator::removeCollision(Vec2i coordinates_)
-// {
-//     auto it = std::find(walls.begin(), walls.end(), coordinates_);
-//     if (it != walls.end()) {
-//         walls.erase(it);
-//     }
-// }
-
-// void AStar::Generator::clearCollisions()
-// {
-//     walls.clear();
-// }
 std::vector<std::vector<int>>* AStar::Generator::findPath(Vec2i source_, Vec2i target_)
 {
     auto res = new std::vector<std::vector<int>>();
@@ -111,7 +95,7 @@ std::vector<std::vector<int>>* AStar::Generator::findPath(Vec2i source_, Vec2i t
                 continue;
             }
 
-            uint totalCost = current->G + ((i < 4) ? 10 : 14);
+            uint totalCost = current->G + ((i < 4) ? 1 : 2);
 
             Node *successor = findNodeOnList(openSet, newCoordinates);
             if (successor == nullptr) {
@@ -173,7 +157,6 @@ bool AStar::Generator::detectCollision(Vec2i coordinates_)
 {
     if (coordinates_.x < 0 || coordinates_.x >= worldSize.x ||
         coordinates_.y < 0 || coordinates_.y >= worldSize.y ||
-        // 0){
         (*pGrid)(coordinates_.y,coordinates_.x)==0) {
         return true;
     }
@@ -244,7 +227,7 @@ PYBIND11_MODULE(Astar, m) {
         generator.setGrid(pGrid);
         generator._cityPos = &cityPos;
 
-        BS::thread_pool pool;
+        BS::thread_pool pool(16);
         bool useMultiThread = true;
 
         if(useMultiThread){
