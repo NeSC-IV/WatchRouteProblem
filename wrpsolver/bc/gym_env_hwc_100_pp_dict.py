@@ -162,15 +162,32 @@ class GridWorldEnv(gym.Env):
 def RandomGetPolygon():
     global PIC_DIR_NAMES
     while True:        
-        if not PIC_DIR_NAMES:
-            PIC_DIR_NAMES = os.listdir(DIR_PATH)
-        testJsonDir = DIR_PATH + choice(PIC_DIR_NAMES) + '/data.json'
-        with open(testJsonDir) as json_file:
-            json_data = json.load(json_file)
-        polygon = shapely.Polygon(json_data['polygon'])
+        # if not PIC_DIR_NAMES:
+        #     PIC_DIR_NAMES = os.listdir(DIR_PATH)
+        # testJsonDir = DIR_PATH + choice(PIC_DIR_NAMES) + '/data.json'
+        # with open(testJsonDir) as json_file:
+        #     json_data = json.load(json_file)
+        # polygon = shapely.Polygon(json_data['polygon'])
+        polygon = GetPolygon(random.randint(0,35000))
         if polygon.is_valid:
             return polygon
-        
+
+def GetPolygon(seed):
+    json_path = os.path.dirname(os.path.abspath(__file__))+"/../Test/json/"
+    map_file = os.path.dirname(os.path.abspath(__file__))+"/../Test/map_id_35000.txt"
+    map_ids = np.loadtxt(map_file, str)
+
+    file_name = map_ids[seed]
+    # print(file_name)
+    with open(json_path + '/' + file_name + '.json') as json_file:
+        json_data = json.load(json_file)
+
+
+    bbox = json_data['bbox']
+    maxNum = max(bbox['max'][0],bbox['max'][1])
+    verts = (np.array(json_data['verts']) * PIC_SIZE / math.ceil(maxNum)).astype(int)
+    return shapely.Polygon(verts)
+     
 def GetStartPoint(polygon):
     temppolygon = polygon.buffer(-STEP)
     minx, miny, maxx, maxy = temppolygon.bounds

@@ -107,7 +107,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
-        self.avgpool = nn.Sequential(nn.AvgPool2d(2))
+        self.avgpool = nn.Sequential(nn.AvgPool2d(3))
 
         self.group2 = nn.Sequential(
             OrderedDict([
@@ -182,7 +182,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: spaces.Dict,
-        cnn_output_dim: int = 46,#114
+        cnn_output_dim: int = 114,#114,46
         normalized_image: bool = False,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
@@ -193,7 +193,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace, normalized_image=normalized_image):
-                extractors[key] = IMPALA(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                extractors[key] = ResNet18(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
