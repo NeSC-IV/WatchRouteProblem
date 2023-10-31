@@ -4,7 +4,34 @@ import logging
 from multiprocessing import Pool,Manager
 from .astar.a_star import findPath
 from .astar_cpp import RecordDistanceCPP
-from ..Global import *
+from .mtsp.tabu_mtsp import TabuMtsp
+from .mtsp.aco_mtsp import ACOMtsp
+
+class TabuMtspAstar(TabuMtsp):
+    def __init__(self, cities:list[tuple], typeList:list[int], iters = 1000, 
+                 tabuLimit = 10, maxCandidateNum = None, choice = 0.8,
+                 grid = None):
+        super().__init__(cities,typeList,iters,max(typeList),maxCandidateNum,choice)
+        self.path = None
+        self.grid = grid
+
+    def GetDistanceMartix(self):
+        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum)
+        self.path = path
+        return distance
+class ACOMtspAstar(ACOMtsp):
+    def __init__(self, cities:list[tuple], typeList:list[int], iters = 100, 
+                 antsNum = 40, alpha = 1, beta = 2, rho = 0.8,
+                 grid = None):
+        super().__init__(cities, typeList, iters, antsNum, alpha, beta, rho)
+        self.path = None
+        self.grid = grid
+
+    def GetDistanceMartix(self):
+        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum)
+        self.path = path
+        return distance
+
 
 def ColisionFreeDistance(args):#多线程求无碰撞距离
     i = args[0]
@@ -49,8 +76,30 @@ def cal_cost(distance, solution, goods_num):
     cost = 0
     for j in range(goods_num-1):
         cost += distance[solution[j]][solution[j+1]]
-    # cost += distance[solution[0]][solution[goods_num - 1]]
     return cost
+
+def GetTraceTabu(tspCase, grid):
+    cityPosList, goodsTypes, _ = tspCase
+    mtspSolver = TabuMtspAstar(cityPosList,goodsTypes,grid = grid)
+    bestSolution, bestValue, _ = mtspSolver.findPath()
+    solutionID = [ city.id  for city in bestSolution]
+
+    solution = [city.pos for city in bestSolution]
+    path = [mtspSolver.path[solutionID[i]][solutionID[i+1]]
+            for i in range(len(solution)-1)]
+    return solution, bestValue, path
+
+def GetTraceACO(tspCase, grid):
+    cityPosList, goodsTypes, _ = tspCase
+    mtspSolver = ACOMtspAstar(cityPosList,goodsTypes,grid = grid)
+    bestSolution, bestValue, _ = mtspSolver.findPath()
+    solutionID = [ city.id  for city in bestSolution]
+
+    solution = [city.pos for city in bestSolution]
+    path = [mtspSolver.path[solutionID[i]][solutionID[i+1]]
+            for i in range(len(solution)-1)]
+    return solution, bestValue, path
+
 
 def GetTrace(tspCase, grid):
     ##### 参数及相关数据初始化 #####
@@ -65,7 +114,7 @@ def GetTrace(tspCase, grid):
     tabu_list = []        # 禁忌表
     tabu_time = []        # 禁忌时间表
     current_tabu_num = 0  # 当前禁忌对象数量
-    tabu_limit = 50       # 特赦规则(50次)
+    tabu_limit = goods_num       # 特赦规则(50次)
 
     # 候选集
     candidate_num = city_num
@@ -96,7 +145,7 @@ def GetTrace(tspCase, grid):
         while True:
             # 从邻域选择新解 - 同一类城市交换 + 现有的两交换
             seed = np.random.rand()
-            if seed > 0.5:  # 随机交换卖同一类商品城市的两个节点
+            if seed > 0.8:  # 随机交换卖同一类商品城市的两个节点
                 goods = random.randrange(goods_num)
                 if len(city_class[goods]) == 1:
                     continue
@@ -129,6 +178,7 @@ def GetTrace(tspCase, grid):
             stepCnt += 1
 
         # 得到候选解中的最优解
+
         candidate_best = min(candidate_value)
         best_index = candidate_value.index(candidate_best)
 

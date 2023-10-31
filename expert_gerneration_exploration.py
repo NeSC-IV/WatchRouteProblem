@@ -14,7 +14,7 @@ ACTIONDICT =    {
                 }
 render = False
 import random
-# random.shuffle ( JSONPATHS )
+random.shuffle ( JSONPATHS )
 
 lock = Lock()
 length = Value('i', 0)
@@ -45,7 +45,7 @@ def GetSingleTrajectory(jsonName):
         if Done:
             break
     lock.acquire()
-    if (rewardSum > 1) and (cnt > 20) and Done:
+    if (rewardSum > 10) and (cnt > 20) and Done:
         trajectories.append(traj)
         length.value += 1
         print(rewardSum,cnt,length.value)

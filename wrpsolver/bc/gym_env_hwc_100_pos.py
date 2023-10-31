@@ -18,14 +18,14 @@ from ..MACS.polygons_coverage import FindVisibleRegion,SelectMaxPolygon
 from ..Test.vis_maps import GetPolygon
 STEP = 3
 PIC_SIZE = 100
-PIC_DIR_NAMES = None
 MAXSTEP = 400
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_60_3/"
+PIC_DIR_NAMES = os.listdir(DIR_PATH)
 IMAGE = np.empty((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
 IMAGE.fill(150)
 RANGE = 64
 LOCAL_SHAPE = int((RANGE*2+1)/2)
-LOCAL_SHAPE1 = int(32*2+1)
+LOCAL_SHAPE1 = int((32*2+1))
 GLOBAL_SHAPE = 200
 PATH_LEN = 30
 
@@ -46,11 +46,11 @@ class GridWorldEnv(gym.Env):
         self.unknownGridNum = None
         self.path = []
         self.stepCnt = 0
-        self.render = render
+        self._render = render
 
         self.observation_space = spaces.Dict(
             {
-                "agent": spaces.Box(0, PIC_SIZE, shape=(12,), dtype=np.float32),
+                "agent": spaces.Box(0, 2**10, shape=(14,), dtype=np.float32),
                 "localImage":spaces.Box(0, 255, shape=(4,STEP*2), dtype=np.float16),
                 "localImage1":spaces.Box(0, 255, shape=(LOCAL_SHAPE1,LOCAL_SHAPE1,1), dtype=np.uint8),
                 "localImage2":spaces.Box(0, 255, shape=(LOCAL_SHAPE,LOCAL_SHAPE,1), dtype=np.uint8),
@@ -88,7 +88,7 @@ class GridWorldEnv(gym.Env):
             else:
                 stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
                 visiblePolygon = visiblePolygon.union(stepVisiblePolygon)
-                visiblePolygon = SelectMaxPolygon(visiblePolygon.simplify(0.5,False))
+                visiblePolygon = SelectMaxPolygon(visiblePolygon.simplify(0.05,False))
 
         if(visiblePolygon == None):
             print("visiblePolygon get failed")
@@ -96,13 +96,13 @@ class GridWorldEnv(gym.Env):
         bufferedVisiblePolygon = visiblePolygon.buffer(1)
         if not bufferedVisiblePolygon.is_valid:
             bufferedVisiblePolygon = make_valid(bufferedVisiblePolygon)
-        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.1,False)
+        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.05,True)
         bufferedObstacle = obstacle.buffer(2,join_style=2)
         if not bufferedObstacle.is_valid:
             bufferedObstacle = make_valid(bufferedObstacle)
         frontier = visiblePolygon.boundary.difference(bufferedObstacle)
         frontierList = GetFrontierList(frontier)
-        agent = list(self.pos) + frontierList
+        agent = list([self.stepCnt,self.exploredRange]) + list(self.pos) + frontierList
         
         DrawMultiline(image,visiblePolygon, (255))
         DrawMultiline(image,stepVisiblePolygon, (220))
@@ -114,15 +114,18 @@ class GridWorldEnv(gym.Env):
         self.localObs = self.GetObscatleMap(image,pos[0],pos[1])
         self.localObsImage = self.GetLocalImage(image,pos[0],pos[1],STEP*2)
         DrawMultiline(image,frontier, color=(180))
+        # for i in range(0,len(frontierList),2):
+        #     DrawPoints(image,frontierList[i],frontierList[i+1],(180),2)
         DrawPoints(image,point.x,point.y,(30),2)
         self.localObs1 = self.GetLocalImage(image,pos[0],pos[1],32)
+        self.localObs1 = cv2.resize(self.localObs1,(LOCAL_SHAPE1,LOCAL_SHAPE1),interpolation = cv2.INTER_NEAREST)
         self.localObs2 = self.GetLocalImage(image,pos[0],pos[1],RANGE)
         self.localObs2 = cv2.resize(self.localObs2,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
         self.observationPolygon = visiblePolygon
         self.image = image
-        self.observation = {"agent":np.array(agent),"localImage":np.array(self.localObs/255.0),"localImage1":self.localObs1.reshape(LOCAL_SHAPE1,LOCAL_SHAPE1,1),
+        self.observation = {"agent":np.array(agent,dtype = np.float32),"localImage":np.array(self.localObs/255.0),"localImage1":self.localObs1.reshape(LOCAL_SHAPE1,LOCAL_SHAPE1,1),
                             "localImage2":self.localObs2.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1)}
-        if self.render:
+        if self._render:
             savePath = os.path.dirname(os.path.abspath(__file__))+'/../../render_saved/'
             cv2.imwrite(savePath+'tmp/'+str(self.stepCnt)+'.png',self.image)
             cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObsImage)
@@ -132,6 +135,7 @@ class GridWorldEnv(gym.Env):
             image.fill(0)
             DrawMultiline(image,self.polygon, (255))
             cv2.imwrite(savePath+'polygon.png',image)
+
         # except Exception as e:
         #     print(e)
         #     return False
@@ -151,7 +155,7 @@ class GridWorldEnv(gym.Env):
         self.localObs1 = None
         self.localObs2 = None
         self.unknownGridNum = None
-        self.exploredRange = None
+        self.exploredRange = 0
         self.path = []
         self.stepCnt = 0
         self.polygon = polygon
@@ -159,7 +163,7 @@ class GridWorldEnv(gym.Env):
         self.initImage = None
 
         if not self.polygon:
-            self.polygon = RandomGetPolygon()
+            self.polygon = RandomGetPolygon(self._render)
         if not self.pos:
             self.pos = GetStartPoint(self.polygon)
         self.polygon = self.polygon.buffer(0.7,join_style=2)
@@ -175,7 +179,7 @@ class GridWorldEnv(gym.Env):
 
         self._getObservation(self.pos)
         self.path.append(copy.copy(self.pos))
-        # self.unknownGridNum = CountUnkown(self.image)
+        self.unknownGridNum = CountUnkown(self.image)
         self.exploredRange = self.observationPolygon.area/self.polygon.area
 
         return self.observation,None
@@ -185,7 +189,7 @@ class GridWorldEnv(gym.Env):
         timePunishment = 0
         reward = 0
         info = self._get_info()
-        gamma = 1
+        gamma = 10
         Done = True
 
         #更新位置
@@ -208,10 +212,15 @@ class GridWorldEnv(gym.Env):
         #计算奖励
         if not Done:
 
-            tempExploredRange = self.observationPolygon.area/self.polygon.area
-            exploreReward = (tempExploredRange - self.exploredRange)
+            # tempExploredRange = self.observationPolygon.area/self.polygon.area
+            # exploreReward = (tempExploredRange - self.exploredRange)
+            # exploreReward = exploreReward if exploreReward > 1e-4 else 0
+            # self.exploredRange = tempExploredRange
+
+            tempGridCnt = CountUnkown(self.image)
+            exploreReward = max((self.unknownGridNum - tempGridCnt) * 4e-5,0)
             exploreReward = exploreReward if exploreReward > 1e-4 else 0
-            self.exploredRange = tempExploredRange
+            self.unknownGridNum = tempGridCnt
             
             repeatPunishment = - 0.0 if (self.pos in self.path[:]) else 0
             
@@ -275,15 +284,18 @@ class GridWorldEnv(gym.Env):
         
 
 
-def RandomGetPolygon():
-    global PIC_DIR_NAMES
-    while True:        
-        if not PIC_DIR_NAMES:
-            PIC_DIR_NAMES = os.listdir(DIR_PATH)
-        testJsonDir = DIR_PATH + choice(PIC_DIR_NAMES)
+def RandomGetPolygon(test = False):
+    if(test):
+        jsonFiles = PIC_DIR_NAMES[int(len(PIC_DIR_NAMES)*0.8):]
+
+    else:
+        jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]
+    while True:     
+        testJsonDir = DIR_PATH + choice(jsonFiles)
         with open(testJsonDir) as json_file:
             json_data = json.load(json_file)
         polygon = shapely.Polygon(json_data['polygon'])
+        # print(json_data['polygon'])
         # image = IMAGE.copy()
         # DrawMultiline(image,polygon, color=(255))
         # cv2.imwrite('test.png',image)

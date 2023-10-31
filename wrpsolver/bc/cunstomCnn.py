@@ -6,7 +6,7 @@ from gymnasium import spaces
 from collections import OrderedDict
 from typing import Dict, List, Tuple, Type, Union
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-
+device = th.device("cuda")
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
@@ -19,47 +19,58 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
-        out = nn.ReLU()(x)
+        out = nn.LayerNorm(x.size()[1:],device=x.device)(x)
+        out = nn.ReLU()(out)
         out = self.conv1(out)
+        out = nn.LayerNorm(out.size()[1:],device=out.device)(out)
         out = nn.ReLU()(out)
         out = self.conv2(out)
         return out + x
 
 class ImpalaBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels,criticNormal = False):
         super(ImpalaBlock, self).__init__()
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         self.res1 = ResidualBlock(out_channels)
         self.res2 = ResidualBlock(out_channels)
+        self.criticNormal = criticNormal
 
     def forward(self, x):
-        x = self.conv(x)
-        x = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)(x)
-        x = self.res1(x)
-        x = self.res2(x)
+        if self.criticNormal:
+            x = self.conv(x)
+            x = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)(x)
+            x = self.res1(x)
+            x = self.res2(x)
+        else:
+            x = self.conv(x)
+            x = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)(x)
+            x = self.res1(x)
+            x = self.res2(x)
         return x
 
 class ImpalaModel(nn.Module):
-    def __init__(self,in_channels, out_channels=256, observation_space = None):
+    def __init__(self,in_channels, out_channels=256, observation_space = None,criticNormal = False):
         super(ImpalaModel, self).__init__()
-        self.block1 = ImpalaBlock(in_channels=in_channels, out_channels=16)
-        self.block2 = ImpalaBlock(in_channels=16, out_channels=32)
-        # self.block3 = ImpalaBlock(in_channels=32, out_channels=64)
-        # self.block4 = ImpalaBlock(in_channels=64, out_channels=128)
+        self.criticNormal = criticNormal
+        self.block1 = ImpalaBlock(in_channels=in_channels, out_channels=16,criticNormal=criticNormal)
+        self.block2 = ImpalaBlock(in_channels=16, out_channels=32,criticNormal=criticNormal)
         self.flatten = nn.Flatten()
         self.avgpool = nn.Sequential(nn.AvgPool2d(2))
         with th.no_grad():
-            n_flatten = self.flatten(self.avgpool(self.block2(self.block1(th.as_tensor(observation_space.sample()[None]).float())))).shape[1]
+            input = (th.as_tensor(observation_space.sample()[None]).float())
+            n_flatten = self.flatten(self.avgpool(self.block2(self.block1(input)))).shape[1]
         self.fc = nn.Linear(in_features=n_flatten, out_features=out_channels)
+        if criticNormal:
+            self.ln = nn.LayerNorm(n_flatten)
 
     def forward(self, x):
         x = self.block1(x)
         x = self.block2(x)
-        # x = self.block3(x)
-        # x = self.block4(x)
         x = self.avgpool(x)
         x = self.flatten(x)
         x = x.view(x.size(0), -1)
+        if self.criticNormal:
+            x = self.ln(x)
         x = self.fc(x)
         return x
 
@@ -107,7 +118,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
-        self.avgpool = nn.Sequential(nn.AvgPool2d(3))
+        self.avgpool = nn.Sequential(nn.AvgPool2d(2))
 
         self.group2 = nn.Sequential(
             OrderedDict([
@@ -153,9 +164,10 @@ class ResNet(nn.Module):
         return x
     
 class IMPALA(BaseFeaturesExtractor):
-    def __init__(self, observation_space: spaces.Box, features_dim: int = 512,normalized_image: bool = False):
+    def __init__(self, observation_space: spaces.Box,criticNormal = False, features_dim: int = 512,normalized_image: bool = False):
         super().__init__(observation_space, features_dim)
-        self.model = ImpalaModel(1, features_dim, observation_space)
+        inputChannel = 1
+        self.model = ImpalaModel(inputChannel, features_dim, observation_space,criticNormal)
 
     def forward(self,x):
         return self.model.forward(x)
@@ -182,7 +194,8 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: spaces.Dict,
-        cnn_output_dim: int = 114,#114,46
+        criticNormal = False,
+        cnn_output_dim: int = 46,#114
         normalized_image: bool = False,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
@@ -193,7 +206,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace, normalized_image=normalized_image):
-                extractors[key] = ResNet18(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                extractors[key] = IMPALA(subspace, criticNormal = criticNormal,features_dim=cnn_output_dim, normalized_image=normalized_image)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed

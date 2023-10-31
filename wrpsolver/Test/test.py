@@ -7,12 +7,12 @@ import shapely
 import math
 import shutil
 import os
-from . import random_polygons_generate
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
 from .draw_pictures import *
 
-
+import random
+# random.seed(0)
 def RunTest(seed = 1):
     iterationNum = 64
     d = 40
@@ -66,11 +66,11 @@ def RunTest(seed = 1):
     polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
         polygon, coverageRate, d, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
-    print(length)
+    print("path length ", length)
     length = 0
     for sample in sampleList:
         length += len(sample)
-    print(length)
+    print("samples " , length)
 
     # 绘制生成的多边形
     DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)

@@ -4,13 +4,13 @@ import numpy as np
 from func_timeout import func_set_timeout
 from . import GTSP
 from . import MACS
-from .Global import step,pic_size
 from .Test.draw_pictures import DrawPolygon,DrawMultiline
 import time
 import logging
 import math
 logging.basicConfig(level=logging.INFO)
-@func_set_timeout(30)
+# @func_set_timeout(30)
+# @profile
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     d = d/2
     convexSet = []
@@ -42,7 +42,10 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     gtspCase = GTSP.postProcessing(sampleList)
     logging.debug(time.time() - time1)
     time1 = time.time()
-    order, length, path = GTSP.GetTrace(gtspCase,gridMap)
+    order, length1, path = GTSP.GetTrace(gtspCase,gridMap)
+    order, length, path = GTSP.GetTraceTabu(gtspCase,gridMap)
+    order, length2, path = GTSP.GetTraceACO(gtspCase,gridMap)
+    print(length1,length,length2)
     logging.debug(time.time() - time1)
     return convexSet,sampleList,order,length,path,isSuccess
     

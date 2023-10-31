@@ -17,7 +17,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/ppo_lstm')
+            self.model.save('saved_model/ppod_lstm')
             pass
         return True
     
@@ -36,8 +36,8 @@ if __name__ == "__main__":
         features_extractor_class=CustomCombinedExtractor,
         net_arch=[256, 256]
     )
-    model = RecurrentPPO("MultiInputLstmPolicy", env, verbose=1,batch_size=2**8,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
-    model.set_parameters('saved_model/ppo_lstm')
+    model = RecurrentPPO("MultiInputLstmPolicy", env, use_expert= True,verbose=1,batch_size=2**8,n_steps=2**10,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
+    # model.set_parameters('saved_model/ppo_lstm')
     model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
 
 
