@@ -189,7 +189,7 @@ class GridWorldEnv(gym.Env):
         timePunishment = 0
         reward = 0
         info = self._get_info()
-        gamma = 10
+        gamma = 1
         Done = True
 
         #更新位置
@@ -212,15 +212,15 @@ class GridWorldEnv(gym.Env):
         #计算奖励
         if not Done:
 
-            # tempExploredRange = self.observationPolygon.area/self.polygon.area
-            # exploreReward = (tempExploredRange - self.exploredRange)
-            # exploreReward = exploreReward if exploreReward > 1e-4 else 0
-            # self.exploredRange = tempExploredRange
-
-            tempGridCnt = CountUnkown(self.image)
-            exploreReward = max((self.unknownGridNum - tempGridCnt) * 4e-5,0)
+            tempExploredRange = self.observationPolygon.area/self.polygon.area
+            exploreReward = (tempExploredRange - self.exploredRange)
             exploreReward = exploreReward if exploreReward > 1e-4 else 0
-            self.unknownGridNum = tempGridCnt
+            self.exploredRange = tempExploredRange
+
+            # tempGridCnt = CountUnkown(self.image)
+            # exploreReward = max((self.unknownGridNum - tempGridCnt) * 4e-5,0)
+            # exploreReward = exploreReward if exploreReward > 1e-4 else 0
+            # self.unknownGridNum = tempGridCnt
             
             repeatPunishment = - 0.0 if (self.pos in self.path[:]) else 0
             
@@ -286,7 +286,7 @@ class GridWorldEnv(gym.Env):
 
 def RandomGetPolygon(test = False):
     if(test):
-        jsonFiles = PIC_DIR_NAMES[int(len(PIC_DIR_NAMES)*0.8):]
+        jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]
 
     else:
         jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]

@@ -45,7 +45,7 @@ def GetSingleTrajectory(jsonName):
         if Done:
             break
     lock.acquire()
-    if (rewardSum > 10) and (cnt > 20) and Done:
+    if (rewardSum > 1) and (cnt > 20) and Done:
         trajectories.append(traj)
         length.value += 1
         print(rewardSum,cnt,length.value)

@@ -43,7 +43,7 @@ if __name__ == "__main__":
         # share_features_extractor = False
     )
     model = PPO("MultiInputPolicy", use_expert = True, env = env, verbose=1,
-                batch_size=2**11,n_steps=2**10,gamma=0.99,ent_coef=0.01,
+                batch_size=2**10,n_steps=2**10,gamma=0.99,ent_coef=0.01,
                 policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(3e-5))
     # model.set_parameters("saved_model/decay")
     model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
