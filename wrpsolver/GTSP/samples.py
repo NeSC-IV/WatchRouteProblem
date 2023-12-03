@@ -13,7 +13,7 @@ def getLineList(lines):
     return lineList
 
 
-def GetSample(polygonList, polygon, dSample, gridMap, step = 3):
+def GetSample(polygonList, polygon, dSample, gridMap, step = 5):
 
     sampleList = []
     freeSpace = polygon.buffer(-1, join_style=2)
@@ -42,7 +42,8 @@ def GetSample(polygonList, polygon, dSample, gridMap, step = 3):
             candidates = [(x1,y1),(x1,y2),(x2,y1),(x2,y2)]
             random.shuffle ( candidates )
             for pos in candidates:
-                if pos[1] < gridMap.shape[0] and pos[0] < gridMap.shape[1] and gridMap[pos[1]][pos[0]] != 0:
+                if pos[1] > 0 and pos[0] > 0 and pos[1] < gridMap.shape[0] and pos[0] < gridMap.shape[1]\
+                and gridMap[pos[1]][pos[0]] != 0:
                     pointList.append(pos)
                     break
                     

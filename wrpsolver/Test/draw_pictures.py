@@ -16,10 +16,10 @@ def DrawPolygon( points, color, image, zoomRate = 1):
     return image
 
 
-def DrawPoints(image, x, y, color=(153, 92, 0),size = -1,zoomRate = 1):
+def DrawPoints(image, x, y, color=(153, 92, 0),size = -1,zoomRate = 1,r = 1):
     x = np.round(x*zoomRate).astype(np.int32)
     y = np.round(y*zoomRate).astype(np.int32)
-    cv2.circle(image, (x, y), 1, color, size)
+    cv2.circle(image, (x, y), r, color, size)
     return image
 
 def DrawSinglePoint(image, x, y, color=30,size = -1,zoomRate=1):

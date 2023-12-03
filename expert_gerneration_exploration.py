@@ -5,9 +5,9 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_60_3/'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_60_5/'
 JSONPATHS = os.listdir(DIRPATH)[:]
-step = 3
+step = 5
 ACTIONDICT =    {
                     (step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
                     # (1,1):4,(-1,-1):5,(-1,1):6,(1,-1):7
@@ -27,7 +27,7 @@ def GetSingleTrajectory(jsonName):
     polygon = shapely.Polygon(jsonData['polygon'])
     if(polygon.area > 30000 or polygon.area < 8000):
         return length.value
-    paths = jsonData["paths"]
+    paths = jsonData["   paths"]#todo
     startPoint = paths[0][0]
     actionList = Path2Action(paths)
 
@@ -84,7 +84,7 @@ class getTrajectory():
         self.pool.join()
         print("num episodes", len(trajectories))
         trajectories = list(trajectories)
-        with open('demonstrations_60_3.pkl', 'wb') as f:
+        with open('demonstrations_60_5_obs_mul.pkl', 'wb') as f:
             pickle.dump(trajectories, f)
 
 def main():

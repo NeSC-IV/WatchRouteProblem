@@ -195,7 +195,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         self,
         observation_space: spaces.Dict,
         criticNormal = False,
-        cnn_output_dim: int = 46,#114
+        cnn_output_dim: int = 54,#114
         normalized_image: bool = False,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!

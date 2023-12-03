@@ -10,15 +10,26 @@ class AStarSolver(AStar):
 
     def __init__(self,grid):
         self.grid = grid
-        self.step = 3
+        self.step = 5
         self.y_len = self.grid.shape[0]
         self.x_len = self.grid.shape[1]
-    def isReachable(self, point):
+    def isReachable(self, node, point):
         grid = self.grid
-        (x,y) = point
-        if(x<0 or y <0 or x>=self.x_len or y>=self.y_len):
+        (posX,posY) = node
+        (goalX,goalY) = point
+        stepX = int((goalX-posX)/self.step)
+        stepY = int((goalY-posY)/self.step)
+        for i in range(1,self.step+1):
+            x = posX + (stepX * i)
+            y = posY + (stepY * i)
+            if(x<0 or y<0 or x>=self.x_len or y>=self.y_len):
+                return False
+            if grid[y][x] == 0:
+                return False
+        return True
+        if(goalX<0 or goalY<0 or goalX>=self.x_len or goalY>=self.y_len):
             return False
-        return grid[y][x] != 0 #这里没写错
+        return grid[goalY][goalX] != 0 #这里没写错
 
 
     def heuristic_cost_estimate(self, n1, n2):
@@ -45,15 +56,8 @@ class AStarSolver(AStar):
         neighborList = [
                         (x+step, y), (x-step, y),
                         (x, y+step), (x, y-step),
-                        # (x-step,y-step),(x+step,y+step),
-                        # (x+step,y-step),(x-step,y+step),
-
-                        # (x+miniStep, y), (x-miniStep, y),
-                        # (x, y+miniStep), (x, y-miniStep),
-                        # (x-miniStep,y-miniStep),(x+miniStep,y+miniStep),
-                        # (x+miniStep,y-miniStep),(x-miniStep,y+miniStep),
                         ]
-        nbs = [neighbor for neighbor in neighborList if self.isReachable(neighbor)]
+        nbs = [neighbor for neighbor in neighborList if self.isReachable(node, neighbor)]
         return nbs
 
     def is_goal_reached(self, current, goal) -> bool:

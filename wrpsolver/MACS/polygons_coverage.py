@@ -50,6 +50,7 @@ def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
         visiblePolygon = SelectMaxPolygon(visiblePolygon)
         if(visiblePolygon == None):
             print("failed find visibile polygon")
+            return None
  
         return visiblePolygon.simplify(1, preserve_topology=False)
     except :

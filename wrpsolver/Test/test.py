@@ -15,7 +15,7 @@ import random
 # random.seed(0)
 def RunTest(seed = 1):
     iterationNum = 64
-    d = 40
+    d = 60
     coverageRate = 0.98
 
     # 读取命令行参数

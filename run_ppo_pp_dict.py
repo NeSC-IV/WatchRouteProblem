@@ -38,7 +38,7 @@ if __name__ == "__main__":
         features_extractor_class=CustomCombinedExtractor,
         net_arch=[256, 256]
     )
-    model = PPO("MultiInputPolicy", env, use_expert=True, verbose=1,batch_size=2**10,n_steps=2**11,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
+    model = PPO("MultiInputPolicy", env, verbose=1,batch_size=2**10,n_steps=2**11,gamma=0.99,learning_rate=3e-4,ent_coef=0.01,policy_kwargs = policy_kwargs)
     # model.set_parameters("ppd")
     model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
 

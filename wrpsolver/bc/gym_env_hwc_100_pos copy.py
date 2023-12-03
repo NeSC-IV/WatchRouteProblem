@@ -307,7 +307,6 @@ class GridWorldEnv(gym.Env):
         result = [0] * 8
         result[0:4] = getStepObscatle(image,posX,posY,0,STEP)
         result[4:8] = getStepObscatle(image,posX,posY,STEP,STEP*2)#todo 取消第二步观测？
-        print(result[0:4])
         return result
 
 

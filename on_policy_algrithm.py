@@ -17,7 +17,7 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedul
 from stable_baselines3.common.utils import obs_as_tensor, safe_mean
 from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
-
+EXPERT_DATA = None
 SelfOnPolicyAlgorithm = TypeVar("SelfOnPolicyAlgorithm", bound="OnPolicyAlgorithm")
 
 
@@ -106,11 +106,12 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         self.vf_coef = vf_coef
         self.max_grad_norm = max_grad_norm
         ##是否使用模仿学习算法
-        use_expert = True
+        use_expert = False
         if use_expert:
-            with open("/remote-home/ums_qipeng/WatchRouteProblem/demonstrations_60_3.pkl",'rb') as f:
-                self.expertData = pickle.load(f)
-            self.expertDataNum = len(self.expertData)
+            global EXPERT_DATA
+            with open("/remote-home/ums_qipeng/WatchRouteProblem/demonstrations_60_3_global.pkl",'rb') as f:
+                EXPERT_DATA = pickle.load(f)
+            self.expertDataNum = len(EXPERT_DATA)
             self.envIDs = np.random.randint(0, self.expertDataNum, size = self.n_envs)
             self.stepCnts = np.zeros(shape=(self.n_envs),dtype=np.int32)
             self.lastDones = np.zeros(shape=self.n_envs,dtype=np.bool8)
@@ -168,6 +169,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         rollout_buffer.reset()
         callback.on_rollout_start()
         subSteps = 2
+        useExpert = self.useExpert
         for _ in range(subSteps):
 
             n_steps = 0
@@ -177,7 +179,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             while n_steps < (n_rollout_steps/subSteps):
 
-                if self.useExpert:
+                if self.useExpert and useExpert:
 
                     actions,obs,new_obs,rewards,dones,infos = self.GetExpertData()
                     with th.no_grad():
@@ -253,7 +255,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                     self._last_obs = new_obs  # type: ignore[assignment]
                     self._last_episode_starts = dones
                 
-            self.useExpert = (not self.useExpert)
+            useExpert = (not useExpert)
 
         with th.no_grad():
             # Compute value for the last timestep
@@ -343,7 +345,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         for i in range(self.n_envs):
             envID = self.envIDs[i]
             stepCnt = self.stepCnts[i]
-            data = self.expertData[envID][stepCnt]
+            data = EXPERT_DATA[envID][stepCnt]
 
             actions[i] = data[1]
             rewards[i] = data[2]

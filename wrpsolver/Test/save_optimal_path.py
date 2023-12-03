@@ -9,12 +9,12 @@ from multiprocessing import Pool,Process
 from . import vis_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
 from ..Global import pic_size
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_40_3/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_60_5/"
 os.makedirs(dirPath, exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 iterationNum = 64
 coverageRate = 0.98
-d = 40
+d = 60
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -37,12 +37,12 @@ def SaveSingleOptimalPath(begin,end):
             polygonPints = list(polygon.exterior.coords)
             polygonCoverList, sampleList,order, length, paths, isSuccess = WatchmanRouteProblemSolver(polygon, coverageRate, d, iterationNum)
             if isSuccess and (length>30):
-                jsonData = {'polygon':polygonPints,'paths':paths}
-                print(seed,length)
+                jsonData = {'polygon':polygonPints,'   paths':paths}
+                print(seed,"succeed",length)
                 with open(dirPath+filename+'.json','w') as f:
                     json.dump(jsonData,f,cls=NpEncoder)
             else:
-                print(seed,"Convexpolygons: ",len(polygonCoverList))
+                print(seed,"failed"," length:",length,"   isSuccess:",isSuccess)
             
         # except:
         #     print("error")

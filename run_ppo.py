@@ -2,7 +2,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv,VecFrameStack
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
-from wrpsolver.bc.cunstomCnn import ResNet18,CustomCombinedExtractor
+from wrpsolver.bc.cunstomCnn import CustomCombinedExtractor
 from stable_baselines3 import PPO
 from typing import Callable
 
@@ -12,7 +12,7 @@ faulthandler.enable()
 def linear_schedule(initial_value: float) -> Callable[[float], float]:
 
     def func(progress_remaining: float) -> float:
-        return max(progress_remaining * initial_value,1e-6)
+        return max(progress_remaining * initial_value,5e-6)
     return func
 class SaveOnBestTrainingRewardCallback(BaseCallback):
 
@@ -22,7 +22,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/decay')
+            self.model.save('saved_model/60_5_obs_mul')
             pass
         return True
     
@@ -42,10 +42,12 @@ if __name__ == "__main__":
         net_arch=[256, 256],
         # share_features_extractor = False
     )
-    model = PPO("MultiInputPolicy", use_expert = True, env = env, verbose=1,
-                batch_size=2**10,n_steps=2**10,gamma=0.99,ent_coef=0.01,
-                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(3e-5))
-    # model.set_parameters("saved_model/decay")
-    model.learn(total_timesteps=2e8,progress_bar=True,log_interval=1,callback=callback)
+    model = PPO("MultiInputPolicy",  env = env, verbose=1,
+                batch_size=2**10,n_steps=2**11,gamma=0.99,ent_coef=0.01,
+                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(1e-4),
+                use_expert=True
+                )
+    # model.set_parameters("saved_model/rate")
+    model.learn(total_timesteps=1e8,progress_bar=True,log_interval=1,callback=callback)
 
 
