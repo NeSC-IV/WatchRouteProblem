@@ -22,7 +22,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/60_5_obs_mul')
+            self.model.save('saved_model/40_3_1')
             pass
         return True
     
@@ -43,11 +43,11 @@ if __name__ == "__main__":
         # share_features_extractor = False
     )
     model = PPO("MultiInputPolicy",  env = env, verbose=1,
-                batch_size=2**10,n_steps=2**11,gamma=0.99,ent_coef=0.01,
-                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(1e-4),
+                batch_size=2**10,n_steps=2**10,gamma=0.99,ent_coef=0.01,
+                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(3e-5),
                 use_expert=True
                 )
-    # model.set_parameters("saved_model/rate")
+    model.set_parameters("saved_model/40_3")
     model.learn(total_timesteps=1e8,progress_bar=True,log_interval=1,callback=callback)
 
 

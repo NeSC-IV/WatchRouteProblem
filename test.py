@@ -1,7 +1,135 @@
-from wrpsolver.Test.draw_pictures import DrawPolygon
-import numpy as np
-import cv2
-IMAGE = np.zeros((100, 100,1), dtype=np.uint8)
-polygon = [(94.49978338231392, 40.57841560236162), (94.62574349111571, 40.58068083768239), (95.7, 41.269956395832644), (95.7, 50.8), (137.20000000000002, 50.9), (137.20000000000002, 17.5), (120.7, 17.3), (120.7, 39.465013913483425), (119.67298053319796, 40.26522134018474), (119.4996001729613, 40.242468146748436), (119.39999999999999, 0.9999999999999998), (69.6, 0.9999999999999998), (69.6, 25.28), (94.76236341320129, 25.68803832561948), (95.58740833915505, 29.834186338048482), (95.22855641178903, 30.005183388031977), (94.39999999999999, 29.311297961424934), (94.39999999999999, 26.9), (44.6, 27.1), (43.75531876196242, 30.555514155608282), (43.71423853226318, 30.49237876428429), (44.747081670674504, 25.152541055434142), (68.5, 12.733502538071068), (68.5, 1.0), (18.9, 1.0), (18.700000000000003, 39.8), (17.5, 38.73333062259209), (17.5, 17.1), (1.1, 16.9), (1.0000000000000002, 50.300000000000004), (43.5, 50.7), (44.288684231888666, 43.60184191300203), (44.54364969074589, 60.953803906510075), (43.5, 60.09821785343243), (43.5, 51.900000000000006), (18.700000000000003, 51.7), (17.944673231871086, 52.93598925693823), (17.566887417218545, 52.90397350993378), (17.5, 51.7), (1.0, 51.5), (1.0, 84.80000000000001), (17.5, 85.0), (17.5, 64.04745762711865), (17.99682253313697, 63.86220176730486), (18.701668920164316, 64.23418966243938), (18.799999999999997, 101.6), (59.6, 101.6), (59.6, 84.95652173913044), (43.6, 78.0), (43.6, 71.68403277319149), (43.69444205660153, 71.63831972262875), (44.6, 76.8), (63.88454401813643, 76.89546803969375), (64.47526128837558, 77.06424102552499), (60.7, 78.97363083164299), (60.7, 101.6), (78.5, 101.6), (78.5, 78.83333333333334), (75.43095498278406, 77.22968818920249), (76.66454804672584, 76.88097399952322), (94.39999999999999, 76.7), (94.47108892914471, 72.93228675532997), (95.13689839010031, 72.1562907576404), (95.51285604912326, 72.60272508249149), (94.61385323084787, 77.9), (79.6, 77.9), (79.6, 101.6), (119.39999999999999, 101.6), (119.60000000000001, 62.9), (120.7, 63.98367537313432), (120.7, 85.19999999999999), (137.20000000000002, 85.39999999999999), (137.20000000000002, 52.1), (119.5, 51.900000000000006), (95.7, 51.900000000000006), (95.7, 60.46870748299319), (94.73854852215388, 61.07530625446052), (94.44335271211249, 61.006318215277986), (94.49978338231392, 40.57841560236162)]
-DrawPolygon(polygon,255,IMAGE)
-cv2.imwrite('test.png',IMAGE)
+
+import time
+from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv,DrawPolygon
+from stable_baselines3 import PPO
+from nearest import NearestPolicy
+from frontier import FrontierPolicy
+
+if __name__ == "__main__":
+
+    env = GridWorldEnv(render=False)
+    test_times = 100
+
+    TEST_RL = 0
+    TEST_NE = 1
+    TEST_FT = 0
+
+    #for rl method
+    if TEST_RL:
+        lenList = []
+        rewardList = []
+        timeList = []
+        model = PPO.load('saved_model/40_3_new')
+        num = 0
+        while num < test_times:
+
+            observation,_ = env.reset()
+            Done = False
+            state = None
+            action ,state= model.predict(observation,state,deterministic=True)
+            rewardSum = 0
+            cnt = 0
+            while not Done:
+                action = int(action)
+                observation,reward,Done,_,_ = env.step(action)
+                rewardSum += reward
+                cnt += 1
+                if not Done:
+                    time_start = time.perf_counter()
+                    action ,state = model.predict(observation,state,deterministic=True)
+                    time_end = time.perf_counter()
+                    timeList.append(time_end - time_start)
+            if (rewardSum > 1):
+                lenList.append(cnt)
+                rewardList.append(rewardSum)
+                print(rewardSum,cnt,num)
+                num += 1
+        print("rl method reward:",sum(rewardList)/test_times)
+        print("rl method length:",sum(lenList)/test_times)
+        print("rl method time:",sum(timeList)/sum(lenList))
+
+    #for nearest method
+    if TEST_NE:
+        lenList = []
+        rewardList = []
+        timeList = []
+        num = 0
+        while num < test_times:
+            observation,_ = env.reset()
+            image = env.initImage.copy()
+            image.fill(0)
+            DrawPolygon(list((env.polygon.buffer(-1, join_style=2)).exterior.coords), 255, image, zoomRate = 1)
+            Done = False
+            state = None
+            action = NearestPolicy(env.frontierList, env.pos, image, 3,env.polygon)
+            if action==None:
+                continue
+            rewardSum = 0
+            cnt = 1
+            while not Done:
+                action = int(action)
+                observation,reward,Done,_,_ = env.step(action)
+                cnt += 1
+                rewardSum += reward
+                if not Done:
+                    time_start = time.perf_counter()
+                    action = NearestPolicy(env.frontierList, env.pos, image, 3,env.polygon)
+                    time_end = time.perf_counter()
+                    timeList.append(time_end - time_start)
+                    if(action == None):
+                        break
+
+            if (rewardSum > 1):
+                lenList.append(cnt)
+                rewardList.append(rewardSum)
+                print(rewardSum,cnt,num)
+                num += 1
+
+        print("ne method reward:",sum(rewardList)/test_times)
+        print("ne method length:",sum(lenList)/test_times)
+        print("ne method time:",sum(timeList)/sum(lenList))
+
+    #for nearest method
+    if TEST_FT:
+        lenList = []
+        rewardList = []
+        timeList = []
+        num = 0
+        while num < test_times:
+            observation,_ = env.reset()
+            image = env.initImage.copy()
+            image.fill(0)
+            DrawPolygon(list((env.polygon.buffer(-1, join_style=2)).exterior.coords), 255, image, zoomRate = 1)
+            Done = False
+            state = None
+            actionList = FrontierPolicy(env.frontierList, env.pos, image, 3,env.polygon)
+            if actionList==None:
+                continue
+            rewardSum = 0
+            cnt = 1
+            while not Done:
+                for action in actionList:
+                    action = int(action)
+                    observation,reward,Done,_,_ = env.step(action)
+                    cnt += 1
+                    rewardSum += reward
+                    if Done:
+                        break
+
+                if not Done:
+                    time_start = time.perf_counter()
+                    actionList = FrontierPolicy(env.frontierList, env.pos, image, 3,env.polygon)
+                    time_end = time.perf_counter()
+                    timeList.append(time_end - time_start)
+                    if(actionList == None):
+                        break
+
+            if (rewardSum > 1):
+                lenList.append(cnt)
+                rewardList.append(rewardSum)
+                print(rewardSum,cnt,num)
+                num += 1
+
+        print("ft method reward:",sum(rewardList)/test_times)
+        print("ft method length:",sum(lenList)/test_times)
+        print("ft method time:",sum(timeList)/sum(lenList))

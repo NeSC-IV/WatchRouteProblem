@@ -1,18 +1,14 @@
 import os
-import json
-import cv2
-import glob
-import shapely
+
 import shutil
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from PIL import Image
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
 from stable_baselines3 import PPO
+
 if __name__ == "__main__":
 
     env = GridWorldEnv(render=True)
-    model = PPO.load('saved_model/60_5_obs')
+    model = PPO.load('saved_model/40_3_new')
     rewardList = []
     while True:
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
@@ -32,10 +28,11 @@ if __name__ == "__main__":
         while not Done:
             action = int(action)
             observation,reward,Done,_,_ = env.step(action)
-            action ,state = model.predict(observation,state,deterministic=True)
             print(action,reward,cnt)
             rewardSum += reward
             cnt += 1
+            if not Done:
+                action ,state = model.predict(observation,state,deterministic=True)
 
         # fig, ax = plt.subplots()
         # ims = []

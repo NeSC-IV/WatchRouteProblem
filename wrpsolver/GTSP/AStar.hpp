@@ -61,6 +61,7 @@ namespace AStar
         CoordinateList direction;
         Vec2i worldSize;
         uint directions;
+        uint step;
         pybind11::detail::unchecked_reference<int, 2>* pGrid;
     };
 

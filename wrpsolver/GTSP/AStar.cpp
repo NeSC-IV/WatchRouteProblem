@@ -33,10 +33,9 @@ AStar::Generator::Generator()
 {
     setDiagonalMovement(false);
     setHeuristic(&Heuristic::manhattan);
-    const int step = 3;
+    step = 3;
     direction = {
         { 0, step }, { step, 0 }, { 0, -step }, { -step, 0 },
-        // { -step, -step }, { step, step }, { -step, step }, { step, -step }
     };
 }
 

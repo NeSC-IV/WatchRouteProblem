@@ -49,6 +49,8 @@ def RunTest(seed = 1):
     os.mkdir(path)
     pointList,_,_ = vis_maps.GetPolygon(seed)
     polygon = shapely.Polygon(pointList).simplify(0.05,True).buffer(-0.7,join_style=2)
+
+
     if(type(polygon) != shapely.Polygon):
         print(type(polygon))
         return

@@ -1,5 +1,6 @@
 
 import math
+import shapely
 from . import AStar
 
 
@@ -8,11 +9,15 @@ class AStarSolver(AStar):
     """sample use of the astar algorithm. In this exemple we work on a maze made of ascii characters,
     and a 'node' is just a (x,y) tuple that represents a reachable position"""
 
-    def __init__(self,grid):
+    def __init__(self,grid,polygon=None):
         self.grid = grid
-        self.step = 5
+        self.step = 3
         self.y_len = self.grid.shape[0]
         self.x_len = self.grid.shape[1]
+        if polygon:
+            self.polygon = polygon.simplify(0.05,False)
+        else:
+            self.polygon = None
     def isReachable(self, node, point):
         grid = self.grid
         (posX,posY) = node
@@ -26,6 +31,10 @@ class AStarSolver(AStar):
                 return False
             if grid[y][x] == 0:
                 return False
+            if self.polygon:
+                p = shapely.Point(x,y)
+                if not self.polygon.contains(p):
+                    return False
         return True
         if(goalX<0 or goalY<0 or goalX>=self.x_len or goalY>=self.y_len):
             return False
@@ -61,14 +70,19 @@ class AStarSolver(AStar):
         return nbs
 
     def is_goal_reached(self, current, goal) -> bool:
+        (x1, y1) = current
+        (x2, y2) = goal
+        return math.hypot(x2 - x1, y2 - y1) <= self.step/2#todo
         return current == goal
 
-def findPath(start, goal, grid):
+def findPath(start, goal, grid, polygon = None):
 
     # let's solve it
-    aStarSolver = AStarSolver(grid)
+    aStarSolver = AStarSolver(grid,polygon)
     result = aStarSolver.astar(start, goal)
-    foundPath = list(result)
-    distance = len(foundPath) * aStarSolver.step
+    if result != None:
+        foundPath = list(result)
+        distance = len(foundPath) * aStarSolver.step
 
-    return foundPath, distance
+        return foundPath, distance
+    return None, None

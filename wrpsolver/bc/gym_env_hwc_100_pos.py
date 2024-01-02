@@ -16,7 +16,7 @@ import copy
 from ..Test.draw_pictures import DrawMultiline,DrawPolygon,DrawPoints
 from ..MACS.polygons_coverage import FindVisibleRegion,SelectMaxPolygon
 from ..Test.vis_maps import GetPolygon
-STEP = 5
+STEP = 3
 PIC_SIZE = 100
 MAXSTEP = 400
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_60_5/"
@@ -51,6 +51,7 @@ class GridWorldEnv(gym.Env):
         self.localObs1 = None
         self.localObs2 = None
         self.unknownGridNum = None
+        self.frontierList = None
         self.path = []
         self.stepCnt = 0
         self._render = render
@@ -91,7 +92,7 @@ class GridWorldEnv(gym.Env):
             visiblePolygon = self.observationPolygon
             result = False
         else:
-            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
+            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40, useCPP=True)
             if(stepVisiblePolygon == None):
                 return False
             if(visiblePolygon == None):
@@ -117,28 +118,36 @@ class GridWorldEnv(gym.Env):
             bufferedObstacle = make_valid(bufferedObstacle)
 
         frontier = visiblePolygon.boundary.difference(bufferedObstacle)
-        frontierList = GetFrontierList(frontier,self.pos,STEP)
+        self.frontierList = GetFrontierList(frontier, self.pos, STEP)
+
+
+
         agent = list([self.stepCnt,self.exploredRange])
         
         # print(obstacle)
         DrawMultiline(image,visiblePolygon, (255))
 
-        globalObs = image.copy()
-        DrawPoints(globalObs,point.x,point.y,color=(100),size=-1,r=40)
-        DrawMultiline(globalObs,obstacle,color = (0))
-        self.globalObs = cv2.resize(globalObs,(GLOBAL_SHAPE,GLOBAL_SHAPE),interpolation = cv2.INTER_NEAREST)
+        # globalObs = image.copy()
+        # DrawPoints(globalObs,point.x,point.y,color=(100),size=-1,r=40)
+        # DrawMultiline(globalObs,obstacle,color = (0))
+        # self.globalObs = cv2.resize(globalObs,(GLOBAL_SHAPE,GLOBAL_SHAPE),interpolation = cv2.INTER_NEAREST)
 
         DrawMultiline(image,stepVisiblePolygon, (220))
         DrawMultiline(image,obstacle,color = (0))
 
-        for p in self.path[-PATH_LEN:]:
+        # for p in self.path[-PATH_LEN:]:
+        for p in self.path[:]:
             x = p[0]
             y = p[1]
             image[y][x] = 80
-        self.obscatleMap = self.GetObscatleMap(image,pos[0],pos[1])
+        self.obscatleMap = self.GetObscatleMap(image,pos[0],pos[1],self.polygon)
         self.localObsImage = self.GetLocalImage(image,pos[0],pos[1],STEP*2)
         DrawMultiline(image,frontier, color=(180))
         DrawPoints(image,point.x,point.y,(30),2)
+        for i in range(0, len(self.frontierList), 2):
+            goalX = int(math.ceil(self.frontierList[i])*STEP + self.pos[0])
+            goalY = int(math.ceil(self.frontierList[i+1])*STEP + self.pos[1])
+            DrawPoints(image,goalX,goalY,color=(0),size=-1,r=2)
         self.localObs = self.GetLocalImage(image,pos[0],pos[1],LOCAL_RANGE)
         self.localObs = cv2.resize(self.localObs,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
         self.localObs1 = self.GetLocalImage(image,pos[0],pos[1],LOCAL_RANGE1)
@@ -146,7 +155,7 @@ class GridWorldEnv(gym.Env):
         self.observationPolygon = visiblePolygon
         self.image = image
         self.observation = {"agent":np.array(agent,dtype = np.float32),
-                            "frontier":np.array(frontierList,dtype = np.float32),
+                            "frontier":np.array(self.frontierList,dtype = np.float32),
                             "obscatleMap":np.array(self.obscatleMap),
                             "localObs":self.localObs.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1),
                             "localObs1":self.localObs1.reshape(LOCAL_SHAPE1,LOCAL_SHAPE1,1),
@@ -211,7 +220,7 @@ class GridWorldEnv(gym.Env):
     
     def step(self,action):
         #定义变量
-        timePunishment = 0 # -1e-3
+        timePunishment = -1e-2 
         self.rate = 1
         reward = 0
         info = self._get_info()
@@ -278,8 +287,8 @@ class GridWorldEnv(gym.Env):
         return newImage
     
 
-    def GetObscatleMap(self, image, posX , posY):
-        def getStepObscatle(image, posX, posY, begin, end):
+    def GetObscatleMap(self, image, posX , posY,polygon = None):
+        def getStepObscatle(image, posX, posY, begin, end, polygon):
             result = [0,0,0,0] # 0-free 1-obstacle 2-history path
             neibors = [(1, 0),(-1, 0),(0, 1),(0, -1)]
             boundX = image.shape[1]
@@ -294,6 +303,9 @@ class GridWorldEnv(gym.Env):
                     or image[y][x] == 0 or image[y][x] == 150: #todo 加入包含判断？
                         result[i] = 1
                         break
+                    if polygon and (not polygon.contains(shapely.Point(x,y))):
+                        result[i] = 1
+                        break
 
             for i,direction in enumerate(neibors):
                 dX,dY = direction
@@ -305,9 +317,8 @@ class GridWorldEnv(gym.Env):
 
 
         result = [0] * 8
-        result[0:4] = getStepObscatle(image,posX,posY,0,STEP)
-        result[4:8] = getStepObscatle(image,posX,posY,STEP,STEP*2)#todo 取消第二步观测？
-        print(result[0:4])
+        result[0:4] = getStepObscatle(image,posX,posY,0,STEP,polygon)
+        result[4:8] = getStepObscatle(image,posX,posY,STEP,STEP*2,polygon)#todo 取消第二步观测？
         return result
 
 

@@ -121,7 +121,7 @@ class AStar(ABC, Generic[T]):
                     # re-add the node in order to re-sort the heap
                     openSet.remove(neighbor)
                     heappush(openSet, neighbor)
-        return []
+        return None
 
 
 def find_path(

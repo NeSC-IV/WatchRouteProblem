@@ -5,14 +5,14 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_60_5/'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_40_3/'
 JSONPATHS = os.listdir(DIRPATH)[:]
-step = 5
+step = 3
 ACTIONDICT =    {
                     (step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
                     # (1,1):4,(-1,-1):5,(-1,1):6,(1,-1):7
                 }
-render = False
+render = True
 import random
 random.shuffle ( JSONPATHS )
 
@@ -20,6 +20,8 @@ lock = Lock()
 length = Value('i', 0)
 manager = Manager()
 trajectories = manager.list()
+rewardList = manager.list()
+lenList = manager.list()
 def GetSingleTrajectory(jsonName):
     env = GridWorldEnv(render=render)
     with open(DIRPATH+jsonName) as f:
@@ -27,7 +29,7 @@ def GetSingleTrajectory(jsonName):
     polygon = shapely.Polygon(jsonData['polygon'])
     if(polygon.area > 30000 or polygon.area < 8000):
         return length.value
-    paths = jsonData["   paths"]#todo
+    paths = jsonData["paths"]#todo
     startPoint = paths[0][0]
     actionList = Path2Action(paths)
 
@@ -47,11 +49,14 @@ def GetSingleTrajectory(jsonName):
     lock.acquire()
     if (rewardSum > 1) and (cnt > 20) and Done:
         trajectories.append(traj)
+        rewardList.append(rewardSum)
+        lenList.append(cnt)
         length.value += 1
         print(rewardSum,cnt,length.value)
-    else:
+    elif rewardSum >= 0:
         print(rewardSum,cnt)
-        # os.remove(DIRPATH+jsonName)
+    elif rewardSum < 0:
+        os.remove(DIRPATH+jsonName)
     lock.release()
     return length.value
 
@@ -73,7 +78,7 @@ class getTrajectory():
 
     def CheckTerminate(self, arg):
         
-        if arg >= 10000:
+        if arg >= 20000:
             self.pool.terminate()
 
     def SaveTrajectory(self):
@@ -83,8 +88,10 @@ class getTrajectory():
         self.pool.close()
         self.pool.join()
         print("num episodes", len(trajectories))
+        print("reward mean:", sum(rewardList)/len(rewardList))
+        print("len mean:", sum(lenList)/len(lenList))
         trajectories = list(trajectories)
-        with open('demonstrations_60_5_obs_mul.pkl', 'wb') as f:
+        with open('demonstrations_40_3.pkl', 'wb') as f:
             pickle.dump(trajectories, f)
 
 def main():
@@ -123,6 +130,8 @@ def main():
         if (length >= 10000):
             break
     print("num episodes", len(trajectories))
+    print("reward mean:", sum(rewardList)/len(rewardList))
+    print("len mean:", sum(lenList)/len(lenList))
     with open('demonstrations_expo.pkl', 'wb') as f:
         pickle.dump(trajectories, f)
 

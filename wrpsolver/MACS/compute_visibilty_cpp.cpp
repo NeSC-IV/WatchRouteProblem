@@ -17,7 +17,8 @@ typedef CGAL::Arr_segment_traits_2<Kernel>                              Traits_2
 typedef CGAL::Arrangement_2<Traits_2>                                   Arrangement_2;
 typedef CGAL::Triangular_expansion_visibility_2<Arrangement_2>  TEV;
 
-  std::vector<std::pair<double, double> > compute_visibility_cpp(std::vector<std::pair<double,double>> pointList, std::pair<double,double> watcher) {
+  std::vector<std::pair<double, double> > compute_visibility_cpp(std::vector<std::pair<double,double>> pointList, std::pair<double,double> watcher,
+                                                                  std::vector<std::vector<std::pair<double,double>>> holes) {
     // int main(){
       //create environment
       std::vector<Point_2> points;
@@ -30,6 +31,19 @@ typedef CGAL::Triangular_expansion_visibility_2<Arrangement_2>  TEV;
       int n = points.size();
       for (int i=0;i<n;++i){
         segments.push_back(Segment_2(points[i], points[(i+1)%n]));
+      }
+      int m = holes.size();
+      for (int j=0;j<m;++j){
+        std::vector<Point_2> points;
+        for (auto point = holes[j].begin();point!=holes[j].end();++point){
+          Point_2 p1(point->first,point->second);
+          points.push_back(p1);
+        }
+        int n = points.size();
+        for (int i=0;i<n;++i){
+          segments.push_back(Segment_2(points[i], points[(i+1)%n]));
+      }
+
       }
 
       Arrangement_2 env;

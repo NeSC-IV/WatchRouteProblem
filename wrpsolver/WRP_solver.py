@@ -34,7 +34,7 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     logging.debug(time.time() - time1)
     time1 = time.time()
 
-    sampleList= GTSP.GetSample(convexSet, polygon, 20, gridMap, step=5)
+    sampleList= GTSP.GetSample(convexSet, polygon, 20, gridMap, step=3)
     if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 50) or (len(convexSet) <=3):
         isSuccess = False
         return convexSet,sampleList,order,length,path,isSuccess
