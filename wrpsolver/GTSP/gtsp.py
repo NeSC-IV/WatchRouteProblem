@@ -21,14 +21,15 @@ class TabuMtspAstar(TabuMtsp):
         return distance
 class ACOMtspAstar(ACOMtsp):
     def __init__(self, cities:list[tuple], typeList:list[int], iters = 100, 
-                 antsNum = 40, alpha = 1, beta = 2, rho = 0.8,
-                 grid = None):
+                 antsNum = 100, alpha = 1, beta = 2, rho = 0.9,
+                 grid = None, step = 1):
         super().__init__(cities, typeList, iters, antsNum, alpha, beta, rho)
         self.path = None
         self.grid = grid
+        self.step = step
 
     def GetDistanceMartix(self):
-        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum)
+        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum, self.step)
         self.path = path
         return distance
 
@@ -89,9 +90,11 @@ def GetTraceTabu(tspCase, grid):
             for i in range(len(solution)-1)]
     return solution, bestValue, path
 
-def GetTraceACO(tspCase, grid):
+def GetTraceACO(tspCase, grid, step):
     cityPosList, goodsTypes, _ = tspCase
-    mtspSolver = ACOMtspAstar(cityPosList,goodsTypes,grid = grid)
+    # print(goodsTypes)
+    # exit() #todo
+    mtspSolver = ACOMtspAstar(cityPosList,goodsTypes,grid = grid, step = step)
     bestSolution, bestValue, _ = mtspSolver.findPath()
     solutionID = [ city.id  for city in bestSolution]
 
@@ -101,20 +104,20 @@ def GetTraceACO(tspCase, grid):
     return solution, bestValue, path
 
 
-def GetTrace(tspCase, grid):
+def GetTrace(tspCase, grid, step = 1):
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
     city_position, goods_class, city_class = tspCase
     city_num = len(city_position)             # 城市数目
     goods_num = len(set(goods_class))         # 商品种类数目
     # path, distance = RecordDistance(city_position, grid, city_num)  # 得到距离矩阵
-    path, distance = RecordDistanceCPP(city_position, grid, city_num)  # 得到距离矩阵
+    path, distance = RecordDistanceCPP(city_position, grid, city_num, step)  # 得到距离矩阵
 
     iter_num = 1000       # 迭代次数
     tabu_list = []        # 禁忌表
     tabu_time = []        # 禁忌时间表
     current_tabu_num = 0  # 当前禁忌对象数量
-    tabu_limit = goods_num       # 特赦规则(50次)
+    tabu_limit = 50       # 特赦规则(50次)
 
     # 候选集
     candidate_num = city_num
@@ -212,6 +215,7 @@ def GetTrace(tspCase, grid):
         current_tabu_num -= del_num
         while 0 in tabu_time:
             tabu_time.remove(0)
+        print(bestvalue)
 
     solution = [city_position[i] for i in best_solution]
     path = [path[best_solution[i]][best_solution[(i+1)%(len(best_solution))]]

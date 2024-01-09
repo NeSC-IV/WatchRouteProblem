@@ -8,6 +8,7 @@ import math
 import shutil
 import os
 from . import vis_maps
+from . import hole_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
 from .draw_pictures import *
 
@@ -50,6 +51,8 @@ def RunTest(seed = 1):
     pointList,_,_ = vis_maps.GetPolygon(seed)
     polygon = shapely.Polygon(pointList).simplify(0.05,True).buffer(-0.7,join_style=2)
 
+    #带孔多边形
+    polygon = hole_maps.GetPolygon(5)
 
     if(type(polygon) != shapely.Polygon):
         print(type(polygon))
@@ -60,7 +63,7 @@ def RunTest(seed = 1):
     maxx = math.ceil(maxx/10)*10
     maxy = math.ceil(maxy/10)*10
     image = np.zeros((int(maxy), int(maxx), 3), dtype=np.uint8)
-    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
+    DrawPolygon(polygon, (255, 255, 255), image, zoomRate=1)
     cv2.imwrite('test/test.png',image)
     image1 = cv2.resize(image,(100,100),interpolation = cv2.INTER_NEAREST)
     cv2.imwrite('test/test0.png',image1)
@@ -75,7 +78,7 @@ def RunTest(seed = 1):
     print("samples " , length)
 
     # 绘制生成的多边形
-    DrawPolygon( list(polygon.exterior.coords), (255, 255, 255), image, zoomRate=1)
+    DrawPolygon( polygon, (255, 255, 255), image, zoomRate=1)
     cv2.imwrite('test/test1.png',image)
     colorList = []
     for n in range(192,-1,-64):
@@ -86,7 +89,7 @@ def RunTest(seed = 1):
     for p in polygonCoverList:
         image = image.copy()
         p = p.simplify(0.05, preserve_topology=False)
-        DrawPolygon( list(p.exterior.coords), colorList[cnt], image, zoomRate=1)
+        DrawPolygon(p, colorList[cnt], image, zoomRate=1)
         cv2.imwrite('test/test2_'+ str(cnt) +'.png',image)
         cnt += 1
 

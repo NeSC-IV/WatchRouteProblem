@@ -49,6 +49,7 @@ namespace AStar
     public:
         Generator();
         void setGrid(pybind11::detail::unchecked_reference<int, 2>* _pGrid);
+        void setStep(int _step);
         void setWorldSize(Vec2i worldSize_);
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
@@ -61,7 +62,7 @@ namespace AStar
         CoordinateList direction;
         Vec2i worldSize;
         uint directions;
-        uint step;
+        int step;
         pybind11::detail::unchecked_reference<int, 2>* pGrid;
     };
 

@@ -48,7 +48,7 @@ if __name__ == "__main__":
             frames.append(im)
         frame_one = frames[0]
         frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result.gif", format="GIF", append_images=frames,
-               save_all=True, duration=120, loop=0)
+               save_all=True, duration=60, loop=0)
         
         frames = []
         for pic in range(cnt):
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             frames.append(im)
         frame_one = frames[0]
         frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result1.gif", format="GIF", append_images=frames,
-               save_all=True, duration=120, loop=0)
+               save_all=True, duration=60, loop=0)
         
         frames = []
         for pic in range(cnt):
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             frames.append(im)
         frame_one = frames[0]
         frame_one.save("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/result2.gif", format="GIF", append_images=frames,
-               save_all=True, duration=120, loop=0)
+               save_all=True, duration=60, loop=0)
 
         print("gif saved!")
         rewardList.append(rewardSum)

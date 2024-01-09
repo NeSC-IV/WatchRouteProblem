@@ -10,8 +10,8 @@ import logging
 import math
 logging.basicConfig(level=logging.INFO)
 # @profile
-@func_set_timeout(30)
-def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
+# @func_set_timeout(30)
+def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32,step = 3):
     d = d/2
     convexSet = []
     sampleList = []
@@ -34,15 +34,15 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32):
     logging.debug(time.time() - time1)
     time1 = time.time()
 
-    sampleList= GTSP.GetSample(convexSet, polygon, 20, gridMap, step=3)
-    if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 50) or (len(convexSet) <=3):
+    sampleList= GTSP.GetSample(convexSet, polygon, 20, gridMap, step=step)
+    if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 100) or (len(convexSet) <=3):
         isSuccess = False
         return convexSet,sampleList,order,length,path,isSuccess
     
     gtspCase = GTSP.postProcessing(sampleList)
     logging.debug(time.time() - time1)
     time1 = time.time()
-    order, length, path = GTSP.GetTrace(gtspCase,gridMap)
+    order, length, path = GTSP.GetTraceACO(gtspCase,gridMap,step)
     # order, length, path = GTSP.GetTraceTabu(gtspCase,gridMap)
     # order, length2, path = GTSP.GetTraceACO(gtspCase,gridMap)
     logging.debug(time.time() - time1)
@@ -54,10 +54,13 @@ def Polygon2Gird(polygon, color, gridMap):
     # list -> ndarray
     points = np.array(points)
     points = np.round(points).astype(np.int32)
+    gridMap = cv2.fillPoly(gridMap, [points], color)
 
-    if type(points) is np.ndarray and points.ndim == 2:
-        gridMap = cv2.fillPoly(gridMap, [points], color)
-    else:
-        gridMap = cv2.fillPoly(gridMap, points, color)
+    holes = [list(interior.coords) for interior in polygon.interiors]
+    for i in range(len(holes)):
+        hole = holes[i]
+        hole = np.array(hole)
+        hole = np.round(hole).astype(np.int32)
+        gridMap = cv2.fillPoly(gridMap, [hole], 0, 8)
 
     return gridMap

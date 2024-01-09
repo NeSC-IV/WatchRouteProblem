@@ -91,5 +91,8 @@ def GetVisibilityPolygonCPP(polygon,wacther):
         print(type(polygon))
         return None
     pointList.pop()
-    result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y))
+    holes = [list(interior.coords) for interior in polygon.interiors]
+    for i in range(len(holes)):
+        holes[i].pop()
+    result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y),holes)
     return shapely.Polygon(result).simplify(0.5,False)

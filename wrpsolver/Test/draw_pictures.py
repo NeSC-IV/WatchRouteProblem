@@ -2,16 +2,22 @@ import cv2
 import numpy as np
 import shapely
 from ..Global import *
-def DrawPolygon( points, color, image, zoomRate = 1):
+def DrawPolygon( polygon, color, image, zoomRate = 1,backgroundColor = 0):
 
+    points = list(polygon.exterior.coords)
     points = np.array(points)
     points *= zoomRate
     points = np.round(points).astype(np.int32)
+    image = cv2.fillPoly(image, [points], color,8)
 
-    if type(points) is np.ndarray and points.ndim == 2:
-        image = cv2.fillPoly(image, [points], color,8)
-    else:
-        image = cv2.fillPoly(image, points, color,8)
+    holes = [list(interior.coords) for interior in polygon.interiors]
+    for i in range(len(holes)):
+        hole = holes[i]
+        hole = np.array(hole)
+        hole *= zoomRate
+        hole = np.round(hole).astype(np.int32)
+        image = cv2.fillPoly(image, [hole], backgroundColor, 8)
+
 
     return image
 
@@ -66,7 +72,7 @@ def DrawMultiline(image, multiLine,color = (0, 25, 255),zoomRate = 1):
     elif(type(multiLine) == shapely.LineString):
         drawSingleline(image,multiLine,color,zoomRate=zoomRate)
     elif(type(multiLine) == shapely.Polygon):
-        DrawPolygon(list(multiLine.exterior.coords),color,image,zoomRate=zoomRate)
+        DrawPolygon(multiLine,color,image,zoomRate=zoomRate)
     elif(type(multiLine) == shapely.MultiLineString):
         for line in list(multiLine.geoms):
             drawSingleline(image,line,color,zoomRate=zoomRate)

@@ -58,7 +58,7 @@ if __name__ == "__main__":
             observation,_ = env.reset()
             image = env.initImage.copy()
             image.fill(0)
-            DrawPolygon(list((env.polygon.buffer(-1, join_style=2)).exterior.coords), 255, image, zoomRate = 1)
+            DrawPolygon(env.polygon.buffer(-1, join_style=2), 255, image, zoomRate = 1)
             Done = False
             state = None
             action = NearestPolicy(env.frontierList, env.pos, image, 3,env.polygon)
@@ -99,7 +99,7 @@ if __name__ == "__main__":
             observation,_ = env.reset()
             image = env.initImage.copy()
             image.fill(0)
-            DrawPolygon(list((env.polygon.buffer(-1, join_style=2)).exterior.coords), 255, image, zoomRate = 1)
+            DrawPolygon(env.polygon.buffer(-1, join_style=2), 255, image, zoomRate = 1)
             Done = False
             state = None
             actionList = FrontierPolicy(env.frontierList, env.pos, image, 3,env.polygon)

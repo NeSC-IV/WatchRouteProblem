@@ -32,7 +32,7 @@ if __name__ == '__main__':
     observation,_ = env.reset()
     image = env.initImage.copy()
     image.fill(0)
-    DrawPolygon(list((env.polygon.buffer(-1, join_style=2)).exterior.coords), 255, image, zoomRate = 1)
+    DrawPolygon(env.polygon.buffer(-1, join_style=2), 255, image, zoomRate = 1)
     shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
     shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
     shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")

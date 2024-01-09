@@ -118,6 +118,10 @@ class ACOMtsp(MtspBase):
                 startCity = bestSolution[cityIndex]
                 goalCity = bestSolution[(cityIndex + 1) % self.typeNum]
                 self.pheromoneMartix[startCity.id][goalCity.id] += (1 - self.rho) *  (initValue / self.zoomRate)
+            
+            # print(np.max(self.pheromoneMartix),np.min(self.pheromoneMartix),np.mean(self.pheromoneMartix))
+
+            # print(bestValue)
 
         return bestSolution,bestValue,historyBestValue
 
@@ -126,7 +130,7 @@ class ACOMtsp(MtspBase):
 
 if __name__ == '__main__': 
     cityPosList, goodsTypes = TestCaseGenerate(citynum = 100, typenum = 20, 
-                                               scaleMax = 20, seed = seed)
+                                               scaleMax = 20, seed = None)
     aco = ACOMtsp(cityPosList,goodsTypes)
     bestSolution, bestValue, historyBestValue = aco.findPath()
 
