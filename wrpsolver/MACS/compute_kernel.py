@@ -18,18 +18,20 @@ def GetKernel(polygon, watcher):
         point = pointList[(pointNum) % n]
         pointLeft = pointList[(pointNum - 1) % n]
         pointRight = pointList[(pointNum + 1) % n]
-        rayLine = GetRayLine(point, pointRight)
-        splitedPolygons = split(kernel, rayLine)
         isConvex = (((point[0] - pointLeft[0]) * (pointRight[1] - pointLeft[1]) -
                     (pointRight[0] - pointLeft[0]) * (point[1] - pointLeft[1])) < 0)
         if (isConvex ^ (not ccw)):
             reflexPointList.append(point)
-        for p in list(splitedPolygons.geoms):
-            if p.intersects(watcher):
-                kernel = p
-                break
-
+            #todo
+            rayLine = GetRayLine(point, pointRight)
+            splitedPolygons = split(kernel, rayLine)
+            for p in list(splitedPolygons.geoms):
+                if p.intersects(watcher):
+                    kernel = p
+                    break
+            
         pointNum += 1
+        kernel = kernel.simplify(0.5,True)
     return kernel, reflexPointList
 
 

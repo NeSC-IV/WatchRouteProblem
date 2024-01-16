@@ -15,7 +15,7 @@ class AStarSolver(AStar):
         self.y_len = self.grid.shape[0]
         self.x_len = self.grid.shape[1]
         if polygon:
-            self.polygon = polygon.simplify(0.05,False)
+            self.polygon = polygon.simplify(0.05,True)
         else:
             self.polygon = None
     def isReachable(self, node, point):

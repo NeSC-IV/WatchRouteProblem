@@ -68,7 +68,7 @@ def RunTest(seed = 1):
     image1 = cv2.resize(image,(100,100),interpolation = cv2.INTER_NEAREST)
     cv2.imwrite('test/test0.png',image1)
 
-    polygonCoverList, sampleList,order, length, path, _ = WatchmanRouteProblemSolver(
+    polygonCoverList, sampleList, order, length, path, _ = WatchmanRouteProblemSolver(
         polygon, coverageRate, d, iterationNum)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print("path length ", length)
@@ -88,7 +88,7 @@ def RunTest(seed = 1):
     cnt = 0
     for p in polygonCoverList:
         image = image.copy()
-        p = p.simplify(0.05, preserve_topology=False)
+        p = p.simplify(0.05, preserve_topology=True)
         DrawPolygon(p, colorList[cnt], image, zoomRate=1)
         cv2.imwrite('test/test2_'+ str(cnt) +'.png',image)
         cnt += 1

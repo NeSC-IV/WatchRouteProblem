@@ -9,10 +9,10 @@ import time
 import logging
 import math
 logging.basicConfig(level=logging.INFO)
-# @profile
 # @func_set_timeout(30)
+@profile
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32,step = 3):
-    d = d/2
+    d = d/1.7
     convexSet = []
     sampleList = []
     order = []
@@ -42,9 +42,10 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32,step = 3):
     gtspCase = GTSP.postProcessing(sampleList)
     logging.debug(time.time() - time1)
     time1 = time.time()
-    order, length, path = GTSP.GetTraceACO(gtspCase,gridMap,step)
-    # order, length, path = GTSP.GetTraceTabu(gtspCase,gridMap)
-    # order, length2, path = GTSP.GetTraceACO(gtspCase,gridMap)
+    order, length, path = GTSP.GetTraceGLNS(gtspCase,gridMap,step)
+    # order2, length2, path2 = GTSP.GetTraceACO(gtspCase,gridMap,step) 
+    # order3, length3, path3 = GTSP.GetTraceTabu(gtspCase,gridMap,step) 
+
     logging.debug(time.time() - time1)
     return convexSet,sampleList,order,length,path,isSuccess
     

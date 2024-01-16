@@ -79,9 +79,9 @@ def GetSingleTrajectory(pathID):
                 if(visiblePolygon == None):
                     print("visiblePolygon get failed")
                     return
-                visiblePolygon = visiblePolygon.simplify(0.1,False)
+                visiblePolygon = visiblePolygon.simplify(0.1,True)
                 obcastle = visiblePolygon.buffer(2).intersection(o)
-                frontier = visiblePolygon.boundary.difference(obcastle.buffer(4)).simplify(0.05,False)
+                frontier = visiblePolygon.boundary.difference(obcastle.buffer(4)).simplify(0.05,True)
 
 
                 pointNext = shapely.Point(path[j+1])

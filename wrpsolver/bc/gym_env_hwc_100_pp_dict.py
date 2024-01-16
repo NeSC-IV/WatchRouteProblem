@@ -97,7 +97,7 @@ class GridWorldEnv(gym.Env):
         self.stepCnt = 0
 
         if not self.polygonInited:
-            self.polygon = RandomGetPolygon().simplify(0.05, preserve_topology=False)
+            self.polygon = RandomGetPolygon().simplify(0.05, preserve_topology=True)
         if not self.startPosInited:
             self.pos = GetStartPoint(self.polygon)
         self.image = IMAGE.copy()

@@ -37,22 +37,25 @@ def SelectPointFromPolygon(polygon):
         if tempPolygon.contains(p):
             return p
 def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
-
+    
     try:
-        if(useCPP):
-            visiblePolygon = GetVisibilityPolygonCPP(polygon, watcher)
-        else:
-            visiblePolygon = GetVisibilityPolygon(polygon, watcher)
-
         dVisibility = watcher.buffer(d)  # d范围视距
-        visiblePolygon = visiblePolygon.intersection(dVisibility)  # 有限视距下的可视范围
+        visiblePolygon = polygon.intersection(dVisibility)  # 有限视距下的可视范围
+        visiblePolygon = visiblePolygon.simplify(0.05, preserve_topology=True)
+        visiblePolygon = SelectMaxPolygon(visiblePolygon)
+
+        if(useCPP):
+            visiblePolygon = GetVisibilityPolygonCPP(visiblePolygon, watcher)
+        else:
+            visiblePolygon = GetVisibilityPolygon(visiblePolygon, watcher)
+
 
         visiblePolygon = SelectMaxPolygon(visiblePolygon)
         if(visiblePolygon == None):
             print("failed find visibile polygon")
             return None
  
-        return visiblePolygon.simplify(1, preserve_topology=False)
+        return visiblePolygon.simplify(0.05, preserve_topology=True)
     except :
         print("FindVisibleRegion failed")
         return None
@@ -68,10 +71,7 @@ def GetKernelPolygon(visiblePolygon):
 def GetRayLine(watcher, vertex):
     xGap = vertex[0] - watcher[0]
     yGap = vertex[1] - watcher[1]
-    rate = (pic_size/(math.hypot(xGap, yGap)))*100000
-    if (rate < 100):
-        # print(rate,xGap,yGap,vertex)
-        pass
+    rate = (pic_size/(math.hypot(xGap, yGap)))*1e6
     extendPoint1 = (watcher[0] + xGap*rate,watcher[1] + yGap*rate)
     extendPoint2 = (watcher[0] - xGap*rate,watcher[1] - yGap*rate)
     return shapely.LineString([extendPoint1, extendPoint2])
@@ -118,14 +118,12 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
             return polygon
     # print(polygons)
     return polygon
-
 def MaximallyCoveringConvexSubset(args):  # MCCS
     unCoveredPolygon = args[0]
     initialPolygon = args[1]
     watcher = args[2]
     d = args[3]
-    visiblePolygon = FindVisibleRegion(
-        initialPolygon, watcher, d,True)  # d为可视距离
+    visiblePolygon = FindVisibleRegion(initialPolygon, watcher, d,True)  # d为可视距离
 
     kernelPolygon, reflexPointList = GetKernel(visiblePolygon, watcher)
     reflexPointList.sort(key=lambda watcher: shapely.distance(
@@ -179,6 +177,7 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
         sPolygon = GetSplitedPolygon(chord, polygon, watcher)
         polygon = max(ePolygon1, ePolygon2, tPolygon, sPolygon, key=lambda inptPolygon: (
             unCoveredPolygon.intersection(inptPolygon)).area)
+        polygon = polygon.simplify(0.5,True)
     return polygon
 
 def PolygonCover(polygon, d, coverage, iterations=32):
@@ -199,7 +198,7 @@ def PolygonCover(polygon, d, coverage, iterations=32):
         RList =(pool.map(MaximallyCoveringConvexSubset,[(unCoverPolygon, polygon, point, d) for point in pointList]))
         RList.append(R0)
         bestR = max(RList,key=lambda R:(R.intersection(unCoverPolygon)).area)
-        bestR = bestR.simplify(0.05,False)
+        bestR = bestR.simplify(0.05,True)
 
         polygonCoverList.append(bestR)
         unCoverPolygon = unCoverPolygon.difference(bestR)

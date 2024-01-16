@@ -4,8 +4,9 @@ import logging
 from multiprocessing import Pool,Manager
 from .astar.a_star import findPath
 from .astar_cpp import RecordDistanceCPP
-from .mtsp.tabu_mtsp import TabuMtsp
 from .mtsp.aco_mtsp import ACOMtsp
+from .mtsp.tabu_mtsp import TabuMtsp
+from .glns.gtsp_glns import GtspGLNS
 
 class TabuMtspAstar(TabuMtsp):
     def __init__(self, cities:list[tuple], typeList:list[int], iters = 1000, 
@@ -16,12 +17,23 @@ class TabuMtspAstar(TabuMtsp):
         self.grid = grid
 
     def GetDistanceMartix(self):
-        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum)
+        path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum,step=3)
         self.path = path
         return distance
+def GetTraceTabu(tspCase, grid,step=1):
+    cityPosList, goodsTypes, _ = tspCase
+    mtspSolver = TabuMtspAstar(cityPosList,goodsTypes,grid = grid)
+    bestSolution, bestValue, _ = mtspSolver.findPath()
+    solutionID = [ city.id  for city in bestSolution]
+
+    solution = [city.pos for city in bestSolution]
+    path = [mtspSolver.path[solutionID[i]][solutionID[i+1]]
+            for i in range(len(solution)-1)]
+    return solution, bestValue, path
+
 class ACOMtspAstar(ACOMtsp):
     def __init__(self, cities:list[tuple], typeList:list[int], iters = 100, 
-                 antsNum = 100, alpha = 1, beta = 2, rho = 0.9,
+                 antsNum = 40, alpha = 1, beta = 2, rho = 0.9,
                  grid = None, step = 1):
         super().__init__(cities, typeList, iters, antsNum, alpha, beta, rho)
         self.path = None
@@ -32,63 +44,6 @@ class ACOMtspAstar(ACOMtsp):
         path, distance = RecordDistanceCPP(self.cities, self.grid, self.cityNum, self.step)
         self.path = path
         return distance
-
-
-def ColisionFreeDistance(args):#多线程求无碰撞距离
-    i = args[0]
-    city_position = args[1]
-    paths = args[2]
-    distances = args[3]
-    grid = args[4]
-    num = len(city_position)  # 城市数量
-    logging.debug(i)
-    for j in range(i,num):
-        path, distance = findPath(
-            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),grid)
-
-        distances.append(distance)
-        paths.append(path)
-
-def RecordDistance(city_position, grid, num):
-    manager = Manager()
-    tempPaths = [manager.list() for _ in range(num)]
-    tempDistances = [manager.list() for _ in range(num)]
-    for i in range(num):
-        for j in range(i):
-            tempPaths[i].append(0)
-            tempDistances[i].append(0)
-    pool = Pool(12)
-
-    pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
-    pool.close()
-    pool.join()
-    paths = np.eye(num, dtype=object)
-    distances = np.eye(num)
-    for i in range(num):
-        for j in range(i,num):
-            paths[i][j]  = tempPaths[i][j]
-            paths[j][i] = paths[i][j].copy()
-            paths[j][i].reverse()
-            distances[i][j] = distances[j][i] = tempDistances[i][j]
-    return paths, distances
-
-
-def cal_cost(distance, solution, goods_num):
-    cost = 0
-    for j in range(goods_num-1):
-        cost += distance[solution[j]][solution[j+1]]
-    return cost
-
-def GetTraceTabu(tspCase, grid):
-    cityPosList, goodsTypes, _ = tspCase
-    mtspSolver = TabuMtspAstar(cityPosList,goodsTypes,grid = grid)
-    bestSolution, bestValue, _ = mtspSolver.findPath()
-    solutionID = [ city.id  for city in bestSolution]
-
-    solution = [city.pos for city in bestSolution]
-    path = [mtspSolver.path[solutionID[i]][solutionID[i+1]]
-            for i in range(len(solution)-1)]
-    return solution, bestValue, path
 
 def GetTraceACO(tspCase, grid, step):
     cityPosList, goodsTypes, _ = tspCase
@@ -102,9 +57,21 @@ def GetTraceACO(tspCase, grid, step):
     path = [mtspSolver.path[solutionID[i]][solutionID[i+1]]
             for i in range(len(solution)-1)]
     return solution, bestValue, path
+def GetTraceGLNS(tspCase, grid, step):
+    # tspCase_copy = tspCase.copy()
+    cityPosition, goodsClass, cityClass = tspCase
+    cityNum = len(cityPosition)             # 城市数目
+    goodsNum = len(set(goodsClass))         # 商品种类数目
+    path, distance = RecordDistanceCPP(cityPosition, grid, cityNum, step)  # 得到距离矩阵
+    cost,solution = GtspGLNS(cityNum,goodsNum,goodsClass,cityClass,distance)
+    solution = [pos-1 for pos in solution]
+    path = [path[solution[i]][solution[i+1]] for i in range(len(solution)-1)]
+    orders = [cityPosition[i] for i in solution]
+    return orders, cost, path
 
 
 def GetTrace(tspCase, grid, step = 1):
+
     ##### 参数及相关数据初始化 #####
     # 初始化城市实例
     city_position, goods_class, city_class = tspCase
@@ -215,9 +182,52 @@ def GetTrace(tspCase, grid, step = 1):
         current_tabu_num -= del_num
         while 0 in tabu_time:
             tabu_time.remove(0)
-        print(bestvalue)
 
     solution = [city_position[i] for i in best_solution]
     path = [path[best_solution[i]][best_solution[(i+1)%(len(best_solution))]]
             for i in range(len(best_solution)-1)]
     return solution, bestvalue, path
+
+def ColisionFreeDistance(args):#多线程求无碰撞距离
+    i = args[0]
+    city_position = args[1]
+    paths = args[2]
+    distances = args[3]
+    grid = args[4]
+    num = len(city_position)  # 城市数量
+    logging.debug(i)
+    for j in range(i,num):
+        path, distance = findPath(
+            (city_position[i][0], city_position[i][1]), (city_position[j][0], city_position[j][1]),grid)
+
+        distances.append(distance)
+        paths.append(path)
+
+def RecordDistance(city_position, grid, num):
+    manager = Manager()
+    tempPaths = [manager.list() for _ in range(num)]
+    tempDistances = [manager.list() for _ in range(num)]
+    for i in range(num):
+        for j in range(i):
+            tempPaths[i].append(0)
+            tempDistances[i].append(0)
+    pool = Pool(12)
+
+    pool.map(ColisionFreeDistance,iterable = [(i,city_position,tempPaths[i],tempDistances[i],grid) for i in range(num)])
+    pool.close()
+    pool.join()
+    paths = np.eye(num, dtype=object)
+    distances = np.eye(num)
+    for i in range(num):
+        for j in range(i,num):
+            paths[i][j]  = tempPaths[i][j]
+            paths[j][i] = paths[i][j].copy()
+            paths[j][i].reverse()
+            distances[i][j] = distances[j][i] = tempDistances[i][j]
+    return paths, distances
+
+def cal_cost(distance, solution, goods_num):
+    cost = 0
+    for j in range(goods_num-1):
+        cost += distance[solution[j]][solution[j+1]]
+    return cost

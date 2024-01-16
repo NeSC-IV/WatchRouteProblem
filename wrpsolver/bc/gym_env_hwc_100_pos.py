@@ -103,13 +103,13 @@ class GridWorldEnv(gym.Env):
         if(visiblePolygon == None):
             print("visiblePolygon get failed")
             return False
-        visiblePolygon = SelectMaxPolygon(visiblePolygon).simplify(0.05,False)
+        visiblePolygon = SelectMaxPolygon(visiblePolygon).simplify(0.05,True)
 
         bufferedVisiblePolygon = visiblePolygon.buffer(1)
         if not bufferedVisiblePolygon.is_valid:
             bufferedVisiblePolygon = make_valid(bufferedVisiblePolygon)
 
-        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.5,False)
+        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.5,True)
         if not obstacle.is_valid:
             obstacle = make_valid(obstacle)
 

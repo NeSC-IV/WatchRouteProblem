@@ -43,7 +43,7 @@ def GetIntersectPointList(intersection):
 # @profile
 def GetVisibilityPolygon(polygon, watcher):
 
-    polygon = polygon.simplify(0.05, preserve_topology=False)
+    polygon = polygon.simplify(0.05, preserve_topology=True)
     visibilityPolygon = []
     result = []
     if not polygon.covers(watcher):
@@ -79,7 +79,6 @@ def GetVisibilityPolygon(polygon, watcher):
 @func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):
     # print(list(polygon.exterior.coords),wacther)
-    polygon = polygon.simplify(0.5, preserve_topology=False)
     if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
         for p in polygon.geoms:
             if(p.contains(wacther)):
@@ -95,4 +94,4 @@ def GetVisibilityPolygonCPP(polygon,wacther):
     for i in range(len(holes)):
         holes[i].pop()
     result = visibility.compute_visibility_cpp(pointList,(wacther.x,wacther.y),holes)
-    return shapely.Polygon(result).simplify(0.5,False)
+    return shapely.Polygon(result).simplify(0.5,True)
