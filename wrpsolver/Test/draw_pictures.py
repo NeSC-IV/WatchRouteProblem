@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import shapely
 from ..Global import *
-def DrawPolygon( polygon, color, image, zoomRate = 1,backgroundColor = 0):
+def DrawPolygon( polygon, color, image, zoomRate = 1,backgroundColor = 150):
 
     points = list(polygon.exterior.coords)
     points = np.array(points)

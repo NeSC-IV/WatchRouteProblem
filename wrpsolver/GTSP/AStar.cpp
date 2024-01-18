@@ -31,7 +31,6 @@ AStar::uint AStar::Node::getScore()
 
 AStar::Generator::Generator()
 {
-    setDiagonalMovement(false);
     setHeuristic(&Heuristic::manhattan);
 
 }
@@ -165,9 +164,17 @@ void AStar::Generator::setGrid(pybind11::detail::unchecked_reference<int, 2>* _p
 void AStar::Generator::setStep(int _step)
 {
     step = _step;
-    direction = {
-        { 0, step }, { step, 0 }, { 0, -step }, { -step, 0 },
-    };
+    if (directions == 4){
+        direction = {{ 0, step }, { step, 0 }, { 0, -step }, { -step, 0 },};
+    }
+    else if (directions == 8)
+    {
+        direction = {
+            { 0, step }, { step, 0 }, { 0, -step }, { -step, 0 },
+            { step, step }, { -step, -step }, { step, -step }, { -step, step },
+        };
+    }
+    
 }
 AStar::Vec2i AStar::Heuristic::getDelta(Vec2i source_, Vec2i target_)
 {
@@ -215,7 +222,7 @@ void GetSinglePath(int i, int j){
 namespace py = pybind11;
 
 PYBIND11_MODULE(Astar, m) {
-    m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos,int step) {
+    m.def("GetPath", [](py::array_t<int> _grid, py::array_t<int> _cityPos, int step, bool diagonalMovement) {
         auto grid = _grid.unchecked<2>();
         auto pGrid = &grid;
         auto cityPos = _cityPos.unchecked<2>();
@@ -225,7 +232,7 @@ PYBIND11_MODULE(Astar, m) {
 
         generator.setWorldSize({grid.shape(1), grid.shape(0)});
         generator.setHeuristic(AStar::Heuristic::euclidean);
-        generator.setDiagonalMovement(false);
+        generator.setDiagonalMovement(diagonalMovement);
         generator.setGrid(pGrid);
         generator.setStep(step);
         generator._cityPos = &cityPos;

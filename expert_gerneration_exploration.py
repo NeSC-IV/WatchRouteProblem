@@ -5,12 +5,12 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_40_3/'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_hole_60_3/'
 JSONPATHS = os.listdir(DIRPATH)[:]
 step = 3
 ACTIONDICT =    {
                     (step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
-                    # (1,1):4,(-1,-1):5,(-1,1):6,(1,-1):7
+                    (step,step):4,(-step,-step):5,(-step,step):6,(step,-step):7
                 }
 render = True
 import random
@@ -26,12 +26,15 @@ def GetSingleTrajectory(jsonName):
     env = GridWorldEnv(render=render)
     with open(DIRPATH+jsonName) as f:
         jsonData = json.load(f)
-    polygon = shapely.Polygon(jsonData['polygon'])
-    if(polygon.area > 30000 or polygon.area < 8000):
-        return length.value
+    points = jsonData['polygon']
+    holes = jsonData['hole']
+    polygon = shapely.Polygon(shell=points,holes=holes)
+    # if(polygon.area > 30000 or polygon.area < 8000):
+    #     return length.value
     paths = jsonData["paths"]#todo
     startPoint = paths[0][0]
     actionList = Path2Action(paths)
+    print(len(actionList))
 
     traj = []
     obs,_ = env.reset(polygon=polygon,startPoint=startPoint)
@@ -55,8 +58,8 @@ def GetSingleTrajectory(jsonName):
         print(rewardSum,cnt,length.value)
     elif rewardSum >= 0:
         print(rewardSum,cnt)
-    elif rewardSum < 0:
-        os.remove(DIRPATH+jsonName)
+    # elif rewardSum < 0:
+    #     os.remove(DIRPATH+jsonName)
     lock.release()
     return length.value
 
@@ -91,7 +94,7 @@ class getTrajectory():
         print("reward mean:", sum(rewardList)/len(rewardList))
         print("len mean:", sum(lenList)/len(lenList))
         trajectories = list(trajectories)
-        with open('demonstrations_40_3.pkl', 'wb') as f:
+        with open('demonstrations_hole_60_3.pkl', 'wb') as f:
             pickle.dump(trajectories, f)
 
 def main():

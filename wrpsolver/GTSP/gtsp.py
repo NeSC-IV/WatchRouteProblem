@@ -62,7 +62,7 @@ def GetTraceGLNS(tspCase, grid, step):
     cityPosition, goodsClass, cityClass = tspCase
     cityNum = len(cityPosition)             # 城市数目
     goodsNum = len(set(goodsClass))         # 商品种类数目
-    path, distance = RecordDistanceCPP(cityPosition, grid, cityNum, step)  # 得到距离矩阵
+    path, distance = RecordDistanceCPP(cityPosition, grid, cityNum, step,diagonalMovement = True)  # 得到距离矩阵
     cost,solution = GtspGLNS(cityNum,goodsNum,goodsClass,cityClass,distance)
     solution = [pos-1 for pos in solution]
     path = [path[solution[i]][solution[i+1]] for i in range(len(solution)-1)]

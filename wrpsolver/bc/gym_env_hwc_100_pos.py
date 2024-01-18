@@ -19,7 +19,7 @@ from ..Test.vis_maps import GetPolygon
 STEP = 3
 PIC_SIZE = 100
 MAXSTEP = 400
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_60_5/"
+DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_hole_60_3/"
 PIC_DIR_NAMES = os.listdir(DIR_PATH)
 IMAGE = np.empty((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
 IMAGE.fill(150)
@@ -75,10 +75,10 @@ class GridWorldEnv(gym.Env):
             1: np.array([-STEP, 0]),
             2: np.array([0, STEP]),
             3: np.array([0, -STEP]),
-            # 4: np.array([STEP, STEP]),
-            # 5: np.array([-STEP, -STEP]),
-            # 6: np.array([-STEP, STEP]),
-            # 7: np.array([STEP, -STEP]),
+            4: np.array([STEP, STEP]),
+            5: np.array([-STEP, -STEP]),
+            6: np.array([-STEP, STEP]),
+            7: np.array([STEP, -STEP]),
         }
     def _getObservation(self,pos):
         image = self.initImage.copy()
@@ -92,7 +92,7 @@ class GridWorldEnv(gym.Env):
             visiblePolygon = self.observationPolygon
             result = False
         else:
-            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 40, useCPP=True)
+            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
             if(stepVisiblePolygon == None):
                 return False
             if(visiblePolygon == None):
@@ -103,14 +103,16 @@ class GridWorldEnv(gym.Env):
         if(visiblePolygon == None):
             print("visiblePolygon get failed")
             return False
+        # visiblePolygon = SelectMaxPolygon(visiblePolygon).simplify(0.05,True)
         visiblePolygon = SelectMaxPolygon(visiblePolygon).simplify(0.05,True)
 
-        bufferedVisiblePolygon = visiblePolygon.buffer(1)
+        bufferedVisiblePolygon = visiblePolygon.buffer(1,join_style=2)
         if not bufferedVisiblePolygon.is_valid:
             bufferedVisiblePolygon = make_valid(bufferedVisiblePolygon)
 
-        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.5,True)
+        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.05,True)
         if not obstacle.is_valid:
+
             obstacle = make_valid(obstacle)
 
         bufferedObstacle = obstacle.buffer(2,join_style=2)
@@ -125,7 +127,7 @@ class GridWorldEnv(gym.Env):
         agent = list([self.stepCnt,self.exploredRange])
         
         # print(obstacle)
-        DrawMultiline(image,visiblePolygon, (255))
+        DrawMultiline(image, visiblePolygon, (255))
 
         # globalObs = image.copy()
         # DrawPoints(globalObs,point.x,point.y,color=(100),size=-1,r=40)

@@ -7,9 +7,9 @@ import os
 import numpy as np
 from multiprocessing import Pool,Process
 from . import vis_maps
+from . import hole_maps
 from ..WRP_solver import WatchmanRouteProblemSolver
-from ..Global import pic_size
-dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_60_5/"
+dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_hole_60_3/"
 os.makedirs(dirPath, exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 iterationNum = 64
@@ -25,32 +25,36 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 def SaveSingleOptimalPath(begin,end):
+    useHoleMap = True
     for seed in range(begin,end):
-        # try:
-            pointList,filename,rooms= vis_maps.GetPolygon(seed)
-            if(os.path.exists(dirPath+filename+'.json')):
-                continue
-            polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
-            if(polygon.area > 30000 or polygon.area < 8000 or rooms <= 3 or type(polygon) != shapely.Polygon):
-                continue
 
-            polygonPints = list(polygon.exterior.coords)
-            polygonCoverList, sampleList,order, length, paths, isSuccess = WatchmanRouteProblemSolver(polygon, coverageRate, d, iterationNum)
-            if isSuccess and (length>30):
-                jsonData = {'polygon':polygonPints,'   paths':paths}
-                print(seed,"succeed",length)
-                with open(dirPath+filename+'.json','w') as f:
-                    json.dump(jsonData,f,cls=NpEncoder)
-            else:
-                print(seed,"failed"," length:",length,"   isSuccess:",isSuccess)
-            
-        # except:
-        #     print("error")
+        if useHoleMap:
+            polygon = hole_maps.GetPolygon(5)
+            savePath = dirPath+str(seed)+'.json'
+        else:
+            pointList,filename,rooms= vis_maps.GetPolygon(seed)
+            savePath = dirPath+filename+'.json'
+            polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
+            if(polygon.area > 30000 or polygon.area < 8000 or rooms <= 3):
+                continue
+        # if(type(polygon) != shapely.Polygon) or os.path.exists(savePath):
         #     continue
+        polygonCoverList, sampleList,order, length, paths, isSuccess = WatchmanRouteProblemSolver(polygon, coverageRate, d, iterationNum)
+        polygonPoints = list(polygon.exterior.coords)
+        polygonHoles = [list(interior.coords) for interior in polygon.interiors]
+        if isSuccess and (length>30):
+            jsonData = {'polygon':polygonPoints,'hole':polygonHoles,'paths':paths}  #'   paths'
+            print(seed,"succeed",length)
+            with open(savePath,'w') as f:
+                json.dump(jsonData,f,cls=NpEncoder)
+        else:
+            print(seed,"failed"," length:",length," isSuccess:",isSuccess)
+
 def SaveOptimalPath():
-    step = 100
+    step = 1
     seed = step
-    while seed <= 35000:
+    SaveSingleOptimalPath(0,1)
+    while seed <= 1:
         p = Process(target=SaveSingleOptimalPath,args=(seed-step,seed))
         p.start()
         p.join()
