@@ -90,7 +90,7 @@ std::vector<std::vector<int>>* AStar::Generator::findPath(Vec2i source_, Vec2i t
                 continue;
             }
 
-            uint totalCost = current->G + ((i < 4) ? 1 : 2);
+            uint totalCost = current->G + ((i < 4) ? 1 : 1.4);
 
             Node *successor = findNodeOnList(openSet, newCoordinates);
             if (successor == nullptr) {

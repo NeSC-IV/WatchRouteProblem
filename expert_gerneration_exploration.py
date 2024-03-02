@@ -5,7 +5,7 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_hole_60_3/'
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_20_3/'
 JSONPATHS = os.listdir(DIRPATH)[:]
 step = 3
 ACTIONDICT =    {
@@ -15,6 +15,7 @@ ACTIONDICT =    {
 render = True
 import random
 random.shuffle ( JSONPATHS )
+print(len(JSONPATHS))
 
 lock = Lock()
 length = Value('i', 0)
@@ -25,6 +26,7 @@ lenList = manager.list()
 def GetSingleTrajectory(jsonName):
     env = GridWorldEnv(render=render)
     with open(DIRPATH+jsonName) as f:
+    # with open("/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/optimal_path_hole_20_3/100.json") as f:
         jsonData = json.load(f)
     points = jsonData['polygon']
     holes = jsonData['hole']
@@ -34,7 +36,13 @@ def GetSingleTrajectory(jsonName):
     paths = jsonData["paths"]#todo
     startPoint = paths[0][0]
     actionList = Path2Action(paths)
-    print(len(actionList))
+    _len = 0
+    for action in actionList:
+        if action <=3 :
+            _len += (step*0.1)
+        else:
+            _len += (step*0.1) * (1.4)
+    # print(_len)
 
     traj = []
     obs,_ = env.reset(polygon=polygon,startPoint=startPoint)
@@ -58,7 +66,8 @@ def GetSingleTrajectory(jsonName):
         print(rewardSum,cnt,length.value)
     elif rewardSum >= 0:
         print(rewardSum,cnt)
-    # elif rewardSum < 0:
+    elif rewardSum < 0:
+        print(rewardSum,cnt)
     #     os.remove(DIRPATH+jsonName)
     lock.release()
     return length.value
@@ -94,7 +103,7 @@ class getTrajectory():
         print("reward mean:", sum(rewardList)/len(rewardList))
         print("len mean:", sum(lenList)/len(lenList))
         trajectories = list(trajectories)
-        with open('demonstrations_hole_60_3.pkl', 'wb') as f:
+        with open('demonstrations_20_3.pkl', 'wb') as f:
             pickle.dump(trajectories, f)
 
 def main():

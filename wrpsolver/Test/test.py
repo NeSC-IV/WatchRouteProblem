@@ -16,8 +16,9 @@ import random
 # random.seed(0)
 def RunTest(seed = 1):
     iterationNum = 64
-    d = 60
+    d = 20
     coverageRate = 0.98
+    step = 3
 
     # 读取命令行参数
     try:
@@ -52,7 +53,7 @@ def RunTest(seed = 1):
     polygon = shapely.Polygon(pointList).simplify(0.05,True).buffer(-0.7,join_style=2)
 
     #带孔多边形
-    polygon = hole_maps.GetPolygon(5)
+    # polygon = hole_maps.GetPolygon(seed)
 
     if(type(polygon) != shapely.Polygon):
         print(type(polygon))
@@ -69,7 +70,7 @@ def RunTest(seed = 1):
     cv2.imwrite('test/test0.png',image1)
 
     polygonCoverList, sampleList, order, length, path, _ = WatchmanRouteProblemSolver(
-        polygon, coverageRate, d, iterationNum)
+        polygon, coverageRate, d, iterationNum,step=step)
     print("The number of convex polygonlen is " + str(len(polygonCoverList)))
     print("path length ", length)
     length = 0
@@ -89,7 +90,7 @@ def RunTest(seed = 1):
     for p in polygonCoverList:
         image = image.copy()
         p = p.simplify(0.05, preserve_topology=True)
-        DrawPolygon(p, colorList[cnt], image, zoomRate=1)
+        DrawPolygon(p, colorList[cnt % (len(colorList) - 1)], image, zoomRate=1)
         cv2.imwrite('test/test2_'+ str(cnt) +'.png',image)
         cnt += 1
 

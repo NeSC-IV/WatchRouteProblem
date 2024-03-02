@@ -22,7 +22,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/40_3_1')
+            self.model.save('saved_model/hole_20_3_1')
             pass
         return True
     
@@ -47,7 +47,7 @@ if __name__ == "__main__":
                 policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(3e-5),
                 use_expert=True
                 )
-    model.set_parameters("saved_model/40_3")
+    model.set_parameters("saved_model/hole_20_3")
     model.learn(total_timesteps=1e8,progress_bar=True,log_interval=1,callback=callback)
 
 

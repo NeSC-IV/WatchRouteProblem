@@ -15,6 +15,8 @@ def SelectMaxPolygon(polygons):
     if polygons is None:
         print("polygons is None")
         return None
+    if(not shapely.is_valid(polygons)):
+        polygons = shapely.make_valid(polygons)
     elif (type(polygons) == shapely.Polygon):
         MaxPolygon = polygons
     else:
@@ -29,20 +31,37 @@ def SelectMaxPolygon(polygons):
 
 
 def SelectPointFromPolygon(polygon):
-    minx, miny, maxx, maxy = polygon.bounds
     tempPolygon = polygon.buffer(-1)
+    if (type(tempPolygon) == shapely.MultiPolygon) or (type(tempPolygon) == shapely.GeometryCollection):
+        tempPolygon = SelectMaxPolygon(tempPolygon)
+    minx, miny, maxx, maxy = tempPolygon.bounds
     while True:
-        p = shapely.Point(random.uniform(minx, maxx),
-                          random.uniform(miny, maxy))
+        # x = int(random.uniform(minx, maxx))
+        # y = int(random.uniform(miny, maxy))        
+        x = random.uniform(minx, maxx)
+        y = random.uniform(miny, maxy)
+        p = shapely.Point(x,y)
         if tempPolygon.contains(p):
             return p
 def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
     
-    try:
-        dVisibility = watcher.buffer(d)  # d范围视距
+    # try:
+        
+        dVisibility = watcher.buffer(d,cap_style=1)  # d范围视距
         visiblePolygon = polygon.intersection(dVisibility)  # 有限视距下的可视范围
         visiblePolygon = visiblePolygon.simplify(0.05, preserve_topology=True)
-        visiblePolygon = SelectMaxPolygon(visiblePolygon)
+
+        if(type(visiblePolygon) == shapely.GeometryCollection or type(visiblePolygon) == shapely.MultiPolygon):
+            for geoms in visiblePolygon.geoms:
+                if geoms.contains(watcher):
+                    visiblePolygon = geoms
+
+        # image = np.zeros((1000, 1000, 3), dtype=np.uint8)
+        # DrawPolygon( visiblePolygon, (255, 255, 255), image, zoomRate=1)
+        # DrawPoints(image, watcher.x, watcher.y,zoomRate=(1))
+        # cv2.imwrite('test.png',image)
+        # print(watcher)
+        # print(list(visiblePolygon.exterior.coords))
 
         if(useCPP):
             visiblePolygon = GetVisibilityPolygonCPP(visiblePolygon, watcher)
@@ -56,9 +75,9 @@ def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
             return None
  
         return visiblePolygon.simplify(0.05, preserve_topology=True)
-    except :
-        print("FindVisibleRegion failed")
-        return None
+    # except :
+    #     print("FindVisibleRegion failed")
+    #     return None
 
 
 
@@ -183,11 +202,12 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
 def PolygonCover(polygon, d, coverage, iterations=32):
     polygonCoverList = []
     unCoverPolygon = shapely.Polygon(polygon)
-    pool = Pool(32)
+    pool = Pool(iterations)
     while ((unCoverPolygon.area / polygon.area) > (1-coverage)):
 
         point = SelectPointFromPolygon(unCoverPolygon)
         R0 = MaximallyCoveringConvexSubset((unCoverPolygon, polygon, point, d))
+        # print(unCoverPolygon.area / polygon.area)
         bestR = R0
         #迭代开始
         num = iterations
@@ -195,6 +215,7 @@ def PolygonCover(polygon, d, coverage, iterations=32):
         while num > 0:
             pointList.append(SelectPointFromPolygon(R0))
             num -= 1
+
         RList =(pool.map(MaximallyCoveringConvexSubset,[(unCoverPolygon, polygon, point, d) for point in pointList]))
         RList.append(R0)
         bestR = max(RList,key=lambda R:(R.intersection(unCoverPolygon)).area)
@@ -208,5 +229,7 @@ def PolygonCover(polygon, d, coverage, iterations=32):
                 if type(geoms) == shapely.Polygon:
                     polygonList.append(geoms)
             unCoverPolygon = shapely.GeometryCollection(polygonList)
+    pool.close()
+    pool.join()
 
     return polygonCoverList

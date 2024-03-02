@@ -4,7 +4,6 @@ jl = Julia(compiled_modules=False)
 from julia import Main
 pwd = os.path.dirname(os.path.abspath(__file__))+"/"
 Main.include(pwd+"./GLNS.jl")
-
 def GtspGLNS(num_vertices,num_sets,membership,sets,dist):
     membership = [data+1 for data in membership]
     for i in range(len(sets)):

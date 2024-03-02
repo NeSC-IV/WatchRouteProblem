@@ -18,8 +18,8 @@ from ..MACS.polygons_coverage import FindVisibleRegion,SelectMaxPolygon
 from ..Test.vis_maps import GetPolygon
 STEP = 3
 PIC_SIZE = 100
-MAXSTEP = 400
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_hole_60_3/"
+MAXSTEP = 800
+DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_hole_20_3/"
 PIC_DIR_NAMES = os.listdir(DIR_PATH)
 IMAGE = np.empty((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
 IMAGE.fill(150)
@@ -61,14 +61,14 @@ class GridWorldEnv(gym.Env):
                 "agent": spaces.Box(0, 1000, shape=(2,), dtype=np.float32),
                 # "path": spaces.Box(0, 1000, shape=(10,2), dtype=np.float32),
                 "frontier":spaces.Box(0, 1000, shape=(10,), dtype=np.float32),
-                "obscatleMap":spaces.Box(0, 255, shape=(8,), dtype=np.float32),
+                "obscatleMap":spaces.Box(0, 255, shape=(16,), dtype=np.float32),
                 "localObs":spaces.Box(0, 255, shape=(LOCAL_SHAPE,LOCAL_SHAPE,1), dtype=np.uint8),
                 "localObs1":spaces.Box(0, 255, shape=(LOCAL_SHAPE1,LOCAL_SHAPE1,1), dtype=np.uint8),
                 # "localObs2":spaces.Box(0, 255, shape=(LOCAL_SHAPE2,LOCAL_SHAPE2,1), dtype=np.uint8),
                 # "globalObs":spaces.Box(0, 255, shape=(GLOBAL_SHAPE,GLOBAL_SHAPE,1), dtype=np.uint8),
             }
         )
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(8)
 
         self._action_to_direction = {
             0: np.array([STEP, 0]),
@@ -92,7 +92,7 @@ class GridWorldEnv(gym.Env):
             visiblePolygon = self.observationPolygon
             result = False
         else:
-            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 60, useCPP=True)
+            stepVisiblePolygon = FindVisibleRegion(polygon=polygon,watcher = point, d = 20, useCPP=True)
             if(stepVisiblePolygon == None):
                 return False
             if(visiblePolygon == None):
@@ -135,7 +135,10 @@ class GridWorldEnv(gym.Env):
         # self.globalObs = cv2.resize(globalObs,(GLOBAL_SHAPE,GLOBAL_SHAPE),interpolation = cv2.INTER_NEAREST)
 
         DrawMultiline(image,stepVisiblePolygon, (220))
-        DrawMultiline(image,obstacle,color = (0))
+
+        # DrawMultiline(image,obstacle,color = (0))
+        if not shapely.is_empty(obstacle):
+            DrawMultiline(image,obstacle,color = (0))
 
         # for p in self.path[-PATH_LEN:]:
         for p in self.path[:]:
@@ -149,7 +152,7 @@ class GridWorldEnv(gym.Env):
         for i in range(0, len(self.frontierList), 2):
             goalX = int(math.ceil(self.frontierList[i])*STEP + self.pos[0])
             goalY = int(math.ceil(self.frontierList[i+1])*STEP + self.pos[1])
-            DrawPoints(image,goalX,goalY,color=(0),size=-1,r=2)
+            # DrawPoints(image,goalX,goalY,color=(10),size=-1,r=2)
         self.localObs = self.GetLocalImage(image,pos[0],pos[1],LOCAL_RANGE)
         self.localObs = cv2.resize(self.localObs,(LOCAL_SHAPE,LOCAL_SHAPE),interpolation = cv2.INTER_NEAREST)
         self.localObs1 = self.GetLocalImage(image,pos[0],pos[1],LOCAL_RANGE1)
@@ -161,20 +164,14 @@ class GridWorldEnv(gym.Env):
                             "obscatleMap":np.array(self.obscatleMap),
                             "localObs":self.localObs.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1),
                             "localObs1":self.localObs1.reshape(LOCAL_SHAPE1,LOCAL_SHAPE1,1),
-                            # "localObs2":self.localObs2.reshape(LOCAL_SHAPE2,LOCAL_SHAPE2,1),
-                            # "globalObs":self.globalObs.reshape(GLOBAL_SHAPE,GLOBAL_SHAPE,1),
                             }
         
         if self._render:
             savePath = os.path.dirname(os.path.abspath(__file__))+'/../../render_saved/'
-            cv2.imwrite(savePath+'tmp/'+str(self.stepCnt)+'.png',self.image)
-            cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObsImage)
-            cv2.imwrite(savePath+'tmp3/'+str(self.stepCnt)+'.png',self.localObs)
+            cv2.imwrite(savePath+'tmp0/'+str(self.stepCnt)+'.png',self.image)
+            cv2.imwrite(savePath+'tmp1/'+str(self.stepCnt)+'.png',self.localObs)
+            cv2.imwrite(savePath+'tmp3/'+str(self.stepCnt)+'.png',self.localObsImage)
             cv2.imwrite(savePath+'tmp2/'+str(self.stepCnt)+'.png',self.localObs1)
-            image = self.initImage.copy()
-            image.fill(0)
-            DrawMultiline(image,self.polygon, (255))
-            cv2.imwrite(savePath+'polygon.png',image)
 
         return result
         
@@ -196,9 +193,9 @@ class GridWorldEnv(gym.Env):
         self.polygon = polygon
         self.pos = startPoint
         self.initImage = None
-
+        self.polygonFile = None
         if not self.polygon:
-            self.polygon = RandomGetPolygon(self._render)
+            self.polygon,self.polygonFile = RandomGetPolygon(self._render,seed)
         if not self.pos:
             self.pos = GetStartPoint(self.polygon)
         self.path = [self.pos for _ in range(PATH_LEN)]
@@ -210,7 +207,7 @@ class GridWorldEnv(gym.Env):
         self.initImage = np.zeros((self.maxy, self.maxx, 1), dtype=np.uint8)
         self.initImage.fill(150)
         self.image = self.initImage
-        PIC_SIZE = (max(maxx,maxy))+10
+        PIC_SIZE = (max(maxx,maxy))+100
         self.o = shapely.Polygon([(0,0),(PIC_SIZE,0),(PIC_SIZE,PIC_SIZE),(0,PIC_SIZE)]).difference(self.polygon)
 
 
@@ -291,8 +288,8 @@ class GridWorldEnv(gym.Env):
 
     def GetObscatleMap(self, image, posX , posY,polygon = None):
         def getStepObscatle(image, posX, posY, begin, end, polygon):
-            result = [0,0,0,0] # 0-free 1-obstacle 2-history path
-            neibors = [(1, 0),(-1, 0),(0, 1),(0, -1)]
+            result = [0,0,0,0,0,0,0,0] # 0-free 1-obstacle 2-history path
+            neibors = [(1, 0),(-1, 0),(0, 1),(0, -1),(1,1),(-1,-1),(-1,1),(1,-1)]
             boundX = image.shape[1]
             boundY = image.shape[0]
 
@@ -315,32 +312,41 @@ class GridWorldEnv(gym.Env):
                 y = posY + dY * STEP
                 if result[i] == 0 and image[y][x] == 80:
                     result[i] = 2
+            # print(result)
             return result
 
 
-        result = [0] * 8
-        result[0:4] = getStepObscatle(image,posX,posY,0,STEP,polygon)
-        result[4:8] = getStepObscatle(image,posX,posY,STEP,STEP*2,polygon)#todo 取消第二步观测？
+        result = [0] * 16
+        result[0:8] = getStepObscatle(image,posX,posY,0,STEP,polygon)
+        result[8:16] = getStepObscatle(image,posX,posY,STEP,STEP*2,polygon)#todo 取消第二步观测？
         return result
 
+    def DrawPath(self,image):
+        print(self.path)
 
-def RandomGetPolygon(test = False):
+def RandomGetPolygon(test = False,seed=None):
     if(test):
         jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]
+        # jsonFiles = PIC_DIR_NAMES[int(len(PIC_DIR_NAMES)*0.8):]
 
     else:
         jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]
-    while True:     
-        testJsonDir = DIR_PATH + choice(jsonFiles)
+    while True:
+        fileName = choice(jsonFiles)
+        if seed:
+            fileName = seed + ".json"
+        testJsonDir = DIR_PATH + fileName
         with open(testJsonDir) as json_file:
-            json_data = json.load(json_file)
-        polygon = shapely.Polygon(json_data['polygon'])
+            jsonData = json.load(json_file)
+        points = jsonData['polygon']
+        holes = jsonData['hole']
+        polygon = shapely.Polygon(shell=points,holes=holes)
         # print(json_data['polygon'])
         # image = IMAGE.copy()
         # DrawMultiline(image,polygon, color=(255))
         # cv2.imwrite('test.png',image)
         if polygon.is_valid and polygon.area < 30000 and polygon.area > 8000:
-            return polygon
+            return polygon,fileName
         
 
 def GetStartPoint(polygon):
@@ -351,6 +357,7 @@ def GetStartPoint(polygon):
                           random.uniform(miny, maxy))
         if temppolygon.contains(p):
             return (int(p.x),int(p.y))
+            
 
 
 def CountUnkown(image):
@@ -394,4 +401,4 @@ def GetFrontierList(frontier,pos,step):
     pos_array = np.array(list(pos)*ft_num)
     ft_list = (ft_list - pos_array)/step
     return ft_list
-        
+

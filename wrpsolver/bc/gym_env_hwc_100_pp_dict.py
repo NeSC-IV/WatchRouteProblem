@@ -79,7 +79,7 @@ class GridWorldEnv(gym.Env):
             self.observation = {"agent":np.array(agent),"localImage":localImage,"localImage1":localImage1.reshape(LOCAL_SHAPE,LOCAL_SHAPE,1)}
 
             if self.render:
-                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/'+str(self.stepCnt)+'.png',image)
+                cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp0/'+str(self.stepCnt)+'.png',image)
                 cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/'+str(self.stepCnt)+'.png',localImage1)
                 cv2.imwrite('/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/'+str(self.stepCnt)+'.png',localImage)
         except Exception as e:

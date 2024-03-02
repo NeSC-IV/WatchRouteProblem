@@ -2,6 +2,7 @@ import numpy as np
 import random
 import logging
 from multiprocessing import Pool,Manager
+from func_timeout import func_timeout, FunctionTimedOut
 from .astar.a_star import findPath
 from .astar_cpp import RecordDistanceCPP
 from .mtsp.aco_mtsp import ACOMtsp
@@ -64,6 +65,14 @@ def GetTraceGLNS(tspCase, grid, step):
     goodsNum = len(set(goodsClass))         # 商品种类数目
     path, distance = RecordDistanceCPP(cityPosition, grid, cityNum, step,diagonalMovement = True)  # 得到距离矩阵
     cost,solution = GtspGLNS(cityNum,goodsNum,goodsClass,cityClass,distance)
+    
+    # try:
+    #     cost,solution = func_timeout(10,GtspGLNS,args=(cityNum,goodsNum,goodsClass,cityClass,distance))
+    # except FunctionTimedOut:
+    #     print ( "GtspGLNS could not complete within 10 seconds and was terminated.\n")
+    # except Exception as e:
+    #     print(e)
+
     solution = [pos-1 for pos in solution]
     path = [path[solution[i]][solution[i+1]] for i in range(len(solution)-1)]
     orders = [cityPosition[i] for i in solution]

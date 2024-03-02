@@ -29,11 +29,11 @@ def main():
     gridEnv = GridWorldEnv(render=True)
 
     for _ in range(1):
-        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
+        shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp0/")
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
         shutil.rmtree("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/")
-        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp/")
+        os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp0/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp1/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp2/")
         os.mkdir("/remote-home/ums_qipeng/WatchRouteProblem/render_saved/tmp3/")
@@ -53,7 +53,7 @@ def main():
             cnt += 1
             if(Done):
                 break
-        print(rewardSum)
+        # print(rewardSum)
 if __name__ == '__main__':
     while(True):
         main()

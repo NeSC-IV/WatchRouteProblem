@@ -4,5 +4,5 @@ if __name__ =='__main__':
     if len(sys.argv) == 2:
         seed = sys.argv[1]
     else:
-        seed = 2
+        seed = 110
     RunTest(int(seed))

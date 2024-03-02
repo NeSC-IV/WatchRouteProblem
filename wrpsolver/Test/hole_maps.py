@@ -8,7 +8,7 @@ def GetPolygon(seed):
     map_file = os.path.dirname(os.path.abspath(__file__))+"/maps/"+str(seed)+'.png'
     img = cv2.imread(map_file)
     grayImg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # grayImg = cv2.resize(grayImg,(320,240),interpolation = cv2.INTER_NEAREST)
+    grayImg = cv2.resize(grayImg,(320,240),interpolation = cv2.INTER_NEAREST)
     ret,binImg = cv2.threshold(grayImg,128,255,0)
     contours, hierarchy	=cv2.findContours(binImg, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     polygonPoint = np.reshape(contours[0],(-1,2)).tolist()

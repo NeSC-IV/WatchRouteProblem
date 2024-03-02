@@ -11,7 +11,7 @@ import math
 logging.basicConfig(level=logging.INFO)
 # @func_set_timeout(30)
 def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32,step = 3):
-    d = d/1.8
+    d = d/1.9
     convexSet = []
     sampleList = []
     order = []
@@ -29,12 +29,13 @@ def WatchmanRouteProblemSolver(polygon,coverage,d,iteration = 32,step = 3):
     gridMap = Polygon2Gird(polygon.buffer(-2, join_style=2),255,gridMap)
 
     time1 = time.time()
+    logging.debug("begin")
     convexSet = MACS.PolygonCover(polygon,d,coverage,iteration)
     logging.debug(time.time() - time1)
     time1 = time.time()
 
-    sampleList= GTSP.GetSample(convexSet, polygon, 20, gridMap, step=step)
-    if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 100) or (len(convexSet) <=3):
+    sampleList= GTSP.GetSample(convexSet, polygon, 10, gridMap, step=step)
+    if (not len(convexSet)==len(sampleList))  or (len(convexSet) > 500) or (len(convexSet) <=3):
         isSuccess = False
         return convexSet,sampleList,order,length,path,isSuccess
     
