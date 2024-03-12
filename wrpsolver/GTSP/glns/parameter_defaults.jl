@@ -49,7 +49,7 @@ function parameter_settings(num_vertices, num_sets, sets, args)
 		param = Dict(
 		:cold_trials => get(args, :trials, 3),
 		:warm_trials => get(args, :restarts, 2),
-		:max_time => get(args, :max_time, 300),
+		:max_time => get(args, :max_time, 30),
 		:init_tour => get(args, :init_tour, "insertion"),
 
 		:prob_reopt => get(args, :reopt, 0.2),

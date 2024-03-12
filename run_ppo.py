@@ -12,7 +12,7 @@ faulthandler.enable()
 def linear_schedule(initial_value: float) -> Callable[[float], float]:
 
     def func(progress_remaining: float) -> float:
-        return max(progress_remaining * initial_value,5e-6)
+        return max(progress_remaining * initial_value,1e-6)
     return func
 class SaveOnBestTrainingRewardCallback(BaseCallback):
 
@@ -22,7 +22,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            self.model.save('saved_model/hole_20_3_1')
+            self.model.save('saved_model/hole_20_3_rl')
             pass
         return True
     
@@ -44,10 +44,10 @@ if __name__ == "__main__":
     )
     model = PPO("MultiInputPolicy",  env = env, verbose=1,
                 batch_size=2**10,n_steps=2**10,gamma=0.99,ent_coef=0.01,
-                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(3e-5),
-                use_expert=True
+                policy_kwargs = policy_kwargs,clip_range=0.1,learning_rate=linear_schedule(1e-5),
+                use_expert=False
                 )
-    model.set_parameters("saved_model/hole_20_3")
+    # model.set_parameters("saved_model/hole_20_3_1")
     model.learn(total_timesteps=1e8,progress_bar=True,log_interval=1,callback=callback)
 
 

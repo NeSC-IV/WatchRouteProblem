@@ -5,8 +5,8 @@ import pickle
 import shapely
 from multiprocessing import Pool,Lock,Value,Manager
 from wrpsolver.bc.gym_env_hwc_100_pos import GridWorldEnv
-DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_20_3/'
-JSONPATHS = os.listdir(DIRPATH)[:]
+DIRPATH = os.path.dirname(os.path.abspath(__file__))+'/wrpsolver/Test/optimal_path_hole_20_3/'
+JSONPATHS = os.listdir(DIRPATH)[:1]
 step = 3
 ACTIONDICT =    {
                     (step,0):0,(-step,0):1,(0,step):2,(0,-step):3,
@@ -24,9 +24,9 @@ trajectories = manager.list()
 rewardList = manager.list()
 lenList = manager.list()
 def GetSingleTrajectory(jsonName):
+    jsonName = '327.json'
     env = GridWorldEnv(render=render)
     with open(DIRPATH+jsonName) as f:
-    # with open("/remote-home/ums_qipeng/WatchRouteProblem/wrpsolver/Test/optimal_path_hole_20_3/100.json") as f:
         jsonData = json.load(f)
     points = jsonData['polygon']
     holes = jsonData['hole']
@@ -103,8 +103,8 @@ class getTrajectory():
         print("reward mean:", sum(rewardList)/len(rewardList))
         print("len mean:", sum(lenList)/len(lenList))
         trajectories = list(trajectories)
-        with open('demonstrations_20_3.pkl', 'wb') as f:
-            pickle.dump(trajectories, f)
+        # with open('demonstrations_20_3.pkl', 'wb') as f:
+        #     pickle.dump(trajectories, f)
 
 def main():
 

@@ -19,6 +19,7 @@ from ..Test.vis_maps import GetPolygon
 STEP = 3
 PIC_SIZE = 100
 MAXSTEP = 800
+# DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_hole_20_3/complex/"
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))+"/../Test/optimal_path_hole_20_3/"
 PIC_DIR_NAMES = os.listdir(DIR_PATH)
 IMAGE = np.empty((PIC_SIZE, PIC_SIZE,1), dtype=np.uint8)
@@ -110,20 +111,16 @@ class GridWorldEnv(gym.Env):
         if not bufferedVisiblePolygon.is_valid:
             bufferedVisiblePolygon = make_valid(bufferedVisiblePolygon)
 
-        obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.05,True)
-        if not obstacle.is_valid:
+        if bufferedVisiblePolygon.intersects(self.o):
+            obstacle = (bufferedVisiblePolygon.intersection(self.o)).simplify(0.05,True)
+            bufferedObstacle = obstacle.buffer(2,join_style=2)
+            frontier = visiblePolygon.boundary.difference(bufferedObstacle)
+        else:
+            obstacle = None
+            frontier = visiblePolygon.boundary
 
-            obstacle = make_valid(obstacle)
 
-        bufferedObstacle = obstacle.buffer(2,join_style=2)
-        if not bufferedObstacle.is_valid:
-            bufferedObstacle = make_valid(bufferedObstacle)
-
-        frontier = visiblePolygon.boundary.difference(bufferedObstacle)
         self.frontierList = GetFrontierList(frontier, self.pos, STEP)
-
-
-
         agent = list([self.stepCnt,self.exploredRange])
         
         # print(obstacle)
@@ -137,7 +134,7 @@ class GridWorldEnv(gym.Env):
         DrawMultiline(image,stepVisiblePolygon, (220))
 
         # DrawMultiline(image,obstacle,color = (0))
-        if not shapely.is_empty(obstacle):
+        if obstacle == None or not shapely.is_empty(obstacle):
             DrawMultiline(image,obstacle,color = (0))
 
         # for p in self.path[-PATH_LEN:]:
@@ -198,7 +195,7 @@ class GridWorldEnv(gym.Env):
             self.polygon,self.polygonFile = RandomGetPolygon(self._render,seed)
         if not self.pos:
             self.pos = GetStartPoint(self.polygon)
-        self.path = [self.pos for _ in range(PATH_LEN)]
+        self.path = [list(self.pos) for _ in range(PATH_LEN)]
         self.polygon = self.polygon.buffer(0.7,join_style=2)
         self.rate = self.polygon.area / (100*100)
         minx, miny, maxx, maxy = self.polygon.bounds
@@ -332,7 +329,9 @@ def RandomGetPolygon(test = False,seed=None):
     else:
         jsonFiles = PIC_DIR_NAMES[:int(len(PIC_DIR_NAMES)*0.8)]
     while True:
-        fileName = choice(jsonFiles)
+        fileName = ''
+        while '.json' not in fileName:
+            fileName = choice(jsonFiles)
         if seed:
             fileName = seed + ".json"
         testJsonDir = DIR_PATH + fileName

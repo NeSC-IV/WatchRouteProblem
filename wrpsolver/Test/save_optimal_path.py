@@ -16,7 +16,7 @@ dirPath = os.path.dirname(os.path.abspath(__file__))+"/optimal_path_20_3/"
 os.makedirs(dirPath, exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 iterationNum = 64
-coverageRate = 0.98
+coverageRate = 0.97
 d = 20
 step = 3
 class NpEncoder(json.JSONEncoder):
@@ -29,7 +29,7 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 def SaveSingleOptimalPath(begin,end):
-    useHoleMap = True
+    useHoleMap = False
     for seed in range(begin,end):
 
         if useHoleMap:
@@ -39,7 +39,7 @@ def SaveSingleOptimalPath(begin,end):
             pointList,filename,rooms= vis_maps.GetPolygon(seed)
             savePath = dirPath+filename+'.json'
             polygon = shapely.Polygon(pointList).simplify(0.5,True).buffer(-0.7,join_style=2)
-            if(polygon.area > 30000 or polygon.area < 8000 or rooms <= 3):
+            if(polygon.area > 30000 or polygon.area < 5000 or rooms <= 3 or type(polygon.buffer(-2, join_style=2)) != shapely.Polygon):
                 continue
         if(type(polygon) != shapely.Polygon) or os.path.exists(savePath):
             continue

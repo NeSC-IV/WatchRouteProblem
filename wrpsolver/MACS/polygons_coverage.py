@@ -4,6 +4,7 @@ import shapely
 import random
 import math
 from shapely.ops import split, nearest_points
+from shapely.validation import make_valid
 from multiprocessing import Pool
 
 from .compute_kernel import GetKernel
@@ -16,7 +17,7 @@ def SelectMaxPolygon(polygons):
         print("polygons is None")
         return None
     if(not shapely.is_valid(polygons)):
-        polygons = shapely.make_valid(polygons)
+        polygons = make_valid(polygons)
     elif (type(polygons) == shapely.Polygon):
         MaxPolygon = polygons
     else:
@@ -46,6 +47,10 @@ def SelectPointFromPolygon(polygon):
 def FindVisibleRegion(polygon, watcher, d = 32, useCPP = False):
     
     # try:
+        if(not polygon.contains(watcher)):
+            print("watcher not in polygon!")
+            print(watcher)
+            return None
         
         dVisibility = watcher.buffer(d,cap_style=1)  # d范围视距
         visiblePolygon = polygon.intersection(dVisibility)  # 有限视距下的可视范围
@@ -135,7 +140,9 @@ def GetSplitedPolygon(chord, visiblePolygon, watcher):
     for polygon in polygons:
         if type(polygon) == (shapely.Polygon) and polygon.contains(watcher):
             return polygon
-    # print(polygons)
+    polygon = polygon.simplify(0.5,True)
+    if(not polygon.is_valid):
+        polygon = make_valid(polygon)
     return polygon
 def MaximallyCoveringConvexSubset(args):  # MCCS
     unCoveredPolygon = args[0]
@@ -194,10 +201,10 @@ def MaximallyCoveringConvexSubset(args):  # MCCS
         chord = GetSingleReflexChord(
             polygonPointList, reflexPoint1, kernelPolygon)
         sPolygon = GetSplitedPolygon(chord, polygon, watcher)
-        polygon = max(ePolygon1, ePolygon2, tPolygon, sPolygon, key=lambda inptPolygon: (
+        polygon = max([ePolygon1, ePolygon2, tPolygon, sPolygon], key=lambda inptPolygon: (
             unCoveredPolygon.intersection(inptPolygon)).area)
-        polygon = polygon.simplify(0.5,True)
-    return polygon
+
+    return polygon.buffer(0.01)
 
 def PolygonCover(polygon, d, coverage, iterations=32):
     polygonCoverList = []
@@ -219,6 +226,13 @@ def PolygonCover(polygon, d, coverage, iterations=32):
         RList =(pool.map(MaximallyCoveringConvexSubset,[(unCoverPolygon, polygon, point, d) for point in pointList]))
         RList.append(R0)
         bestR = max(RList,key=lambda R:(R.intersection(unCoverPolygon)).area)
+        # max_area = 0
+        # for R in RList:
+        #     if unCoverPolygon.covers(R):
+        #         bestR = R
+        #         break
+        #     elif R.intersects(unCoverPolygon) and (unCoverPolygon.intersection(R)).area > max_area:
+        #         bestR = R
         bestR = bestR.simplify(0.05,True)
 
         polygonCoverList.append(bestR)
@@ -229,6 +243,9 @@ def PolygonCover(polygon, d, coverage, iterations=32):
                 if type(geoms) == shapely.Polygon:
                     polygonList.append(geoms)
             unCoverPolygon = shapely.GeometryCollection(polygonList)
+        unCoverPolygon = unCoverPolygon.simplify(0.05,True)
+        if not unCoverPolygon.is_valid:
+            unCoverPolygon = make_valid(unCoverPolygon)
     pool.close()
     pool.join()
 

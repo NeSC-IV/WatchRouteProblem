@@ -18,7 +18,6 @@ def DrawPolygon( polygon, color, image, zoomRate = 1,backgroundColor = 150):
         hole = np.round(hole).astype(np.int32)
         image = cv2.fillPoly(image, [hole], backgroundColor, 8)
 
-
     return image
 
 
@@ -70,7 +69,7 @@ def DrawMultiline(image, multiLine,color = (0, 25, 255),zoomRate = 1):
         for i in range(length-1):
             DrawLine(image,pointList[i],pointList[i+1],color,zoomRate=zoomRate)
 
-    if(type(multiLine) == shapely.Point):
+    if(type(multiLine) == shapely.Point) or multiLine==None:
         return
     elif(type(multiLine) == shapely.LineString):
         drawSingleline(image,multiLine,color,zoomRate=zoomRate)

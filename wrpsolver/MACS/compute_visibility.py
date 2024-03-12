@@ -79,9 +79,10 @@ def GetVisibilityPolygon(polygon, watcher):
 @func_set_timeout(5)
 def GetVisibilityPolygonCPP(polygon,wacther):
     # print(list(polygon.exterior.coords),wacther)
+    pointList = []
     if (type(polygon) == shapely.GeometryCollection) or (type(polygon) == shapely.MultiPolygon):
         for p in polygon.geoms:
-            if(p.contains(wacther)):
+            if(p.covers(wacther)):
                 pointList = list(p.exterior.coords)
                 break
     elif(type(polygon) == shapely.Polygon):
